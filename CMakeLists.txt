@@ -9,6 +9,11 @@ project(OrgMaker3 LANGUAGES CXX)
 
 add_executable(OrgMaker3 WIN32
 	"src/Main.cpp"
+	"src/Error.cpp"
+	"src/Error.h"
+	"src/Task.h"
+	"src/Task_Editor.cpp"
+	"src/Task_Editor.h"
 )
 
 target_include_directories(OrgMaker3 PRIVATE "src")
