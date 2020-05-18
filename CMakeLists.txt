@@ -24,12 +24,12 @@ target_include_directories(OrgMaker3 PRIVATE "src")
 find_package(PkgConfig QUIET)
 
 # Link SDL2
-set(SDL_SHARED_ENABLED_BY_DEFAULT OFF)
-if(MSVC)
-	set(LIBC ON CACHE INTERNAL "" FORCE)	# Needed to prevent possible 'symbol already defined' errors
+find_package(SDL2)
+if (PKG_CONFIG_FOUND)
+	pkg_check_modules(sdl2 QUIET IMPORTED_TARGET sdl2)
 endif()
-add_subdirectory("external/SDL2" EXCLUDE_FROM_ALL)
-target_link_libraries(OrgMaker3 PRIVATE SDL2-static)
+target_compile_options(OrgMaker3 PRIVATE ${sdl2_CFLAGS})
+target_link_libraries(OrgMaker3 PRIVATE ${sdl2_LDFLAGS})
 
 ##########
 # Tweaks #

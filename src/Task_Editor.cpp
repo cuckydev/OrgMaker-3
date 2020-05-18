@@ -20,7 +20,7 @@ Task_Editor::~Task_Editor()
 	
 }
 
-void Task_Editor::PushEvent(const SDL_Event *event)
+bool Task_Editor::PushEvent(const SDL_Event *event)
 {
-	
+	return true;
 }

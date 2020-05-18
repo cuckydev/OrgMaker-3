@@ -21,5 +21,5 @@ class Task_Editor : public Task
 		~Task_Editor();
 		
 		//Window interface
-		void PushEvent(const SDL_Event *event);
+		bool PushEvent(const SDL_Event *event);
 };

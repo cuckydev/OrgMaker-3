@@ -28,27 +28,48 @@ void ShowError(std::string error)
 //Entry point
 int main(int argc, char *argv[])
 {
-	int result = 0;
+	std::string error;
 	
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS) < 0)
 	{
-		result = -1;
-		ShowError(std::string(SDL_GetError()));
+		//SDL initialization error
+		error = std::string(SDL_GetError());
 	}
 	else
 	{
-		//Create editor task and run
+		//Create editor task
 		Task *task = new Task_Editor();
 		if (task == nullptr || task->GetError())
 		{
-			result = -1;
-			ShowError(task != nullptr ? task->GetError() : std::string("Failed to create editor task"));
+			//Task creation error
+			error = (task != nullptr ? task->GetError() : std::string("Failed to create editor task"));
 		}
-		
-		//Quit SDL
-		SDL_Quit();
+		else
+		{
+			//Enter event loop
+			SDL_Event event;
+			while (1)
+			{
+				//Wait for next event and send to editor task
+				SDL_WaitEvent(&event);
+				if (task->PushEvent(&event))
+					break;
+			}
+			
+			//Check if task errored
+			if (task->GetError())
+				error = (std::string)task->GetError();
+			
+			//Delete task and quit SDL
+			delete task;
+			SDL_Quit();
+		}
 	}
 	
-	return result;
+	//If an error occured, show it to the user and return -1, otherwise return 0
+	if (error.empty())
+		return 0;
+	ShowError(error);
+	return -1;
 }

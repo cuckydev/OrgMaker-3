@@ -27,7 +27,7 @@ class Task
 		virtual ~Task() {}
 		
 		//Window interface
-		virtual void PushEvent(const SDL_Event *event) = 0;
+		virtual bool PushEvent(const SDL_Event *event) = 0;
 		
 		//Get error
 		const Error &GetError() const { return error; }
