@@ -1,1 +1,0 @@
-/usr/bin/c++     CMakeFiles/OrgMaker3.dir/src/Main.cpp.o  -o OrgMaker3  external/SDL2/libSDL2.a -lm -ldl -ldbus-1 -Wl,--no-undefined -pthread 

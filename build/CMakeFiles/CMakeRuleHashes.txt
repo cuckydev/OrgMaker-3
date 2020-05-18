@@ -1,2 +1,0 @@
-# Hashes of file build rules.
-1fd2af29a86e5e80e8a61f38d478eaa3 external/SDL2/CMakeFiles/uninstall
