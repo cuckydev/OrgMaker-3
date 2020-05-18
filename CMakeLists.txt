@@ -11,6 +11,7 @@ add_executable(OrgMaker3 WIN32
 	"src/Main.cpp"
 	"src/Error.cpp"
 	"src/Error.h"
+	"src/Window.h"
 	"src/Task.h"
 	"src/Task_Editor.cpp"
 	"src/Task_Editor.h"

@@ -9,12 +9,19 @@ Purpose: Declare the editor task class
 Authors: Regan "cuckydev" Green
 */
 
+//OrgMaker classes
+#include "Window.h"
+
 //Base class
 #include "Task.h"
 
 //Editor window class
 class Task_Editor : public Task
 {
+	private:
+		//Window
+		Window *window = nullptr;
+		
 	public:
 		//Constructor and destructor
 		Task_Editor();

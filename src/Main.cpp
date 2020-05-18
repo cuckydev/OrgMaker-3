@@ -17,14 +17,6 @@ Authors: Regan "cuckydev" Green
 //OrgMaker classes
 #include "Task_Editor.h"
 
-//Show error
-void ShowError(std::string error)
-{
-	//Show a message box explaining the error
-	std::cout << error << std::endl;
-	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", error.c_str(), nullptr);
-}
-
 //Entry point
 int main(int argc, char *argv[])
 {
@@ -49,13 +41,12 @@ int main(int argc, char *argv[])
 		{
 			//Enter event loop
 			SDL_Event event;
-			while (1)
+			do
 			{
-				//Wait for next event and send to editor task
+				//Wait for next event before pushing to task
 				SDL_WaitEvent(&event);
-				if (task->PushEvent(&event))
-					break;
 			}
+			while (!task->PushEvent(&event));
 			
 			//Check if task errored
 			if (task->GetError())
@@ -70,6 +61,7 @@ int main(int argc, char *argv[])
 	//If an error occured, show it to the user and return -1, otherwise return 0
 	if (error.empty())
 		return 0;
-	ShowError(error);
+	std::cout << error << std::endl;
+	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error", error.c_str(), nullptr); //Yes you can call SDL_ShowSimpleMessageBox without SDL_Init and after SDL_Quit
 	return -1;
 }
