@@ -15,7 +15,7 @@ Authors: Regan "cuckydev" Green
 #include <string>
 
 //OrgMaker classes
-#include "Task_Editor.h"
+#include "Task_EditorWindow.h"
 
 //Entry point
 int main(int argc, char *argv[])
@@ -30,12 +30,12 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		//Create editor task
-		Task *task = new Task_Editor();
+		//Create editor window task
+		Task *task = new Task_EditorWindow();
 		if (task == nullptr || task->GetError())
 		{
 			//Task creation error
-			error = (task != nullptr ? task->GetError() : std::string("Failed to create editor task"));
+			error = (task != nullptr ? task->GetError() : std::string("Failed to create editor window task"));
 		}
 		else
 		{
