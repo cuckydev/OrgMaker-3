@@ -11,6 +11,7 @@ Authors: Regan "cuckydev" Green
 
 //OrgMaker classes
 #include "Window.h"
+#include "Organya.h"
 #include "Placement.h"
 
 //Base class
@@ -22,6 +23,9 @@ class Task_EditorWindow : public Task
 	private:
 		//Window
 		Window *window = nullptr;
+		
+		//Organya
+		Organya organya;
 		
 		//Area placements
 		Placement topbar = {
@@ -43,6 +47,6 @@ class Task_EditorWindow : public Task
 		Task_EditorWindow();
 		~Task_EditorWindow();
 		
-		//Window interface
+		//Task interface
 		bool PushEvent(const SDL_Event *event);
 };

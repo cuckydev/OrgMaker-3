@@ -10,6 +10,7 @@ Authors: Regan "cuckydev" Green
 //Declaration
 #include "Task_EditorWindow.h"
 
+//Constructor and destructor
 Task_EditorWindow::Task_EditorWindow()
 {
 	//Create window
@@ -21,6 +22,13 @@ Task_EditorWindow::Task_EditorWindow()
 		error.Push(window->GetError());
 		return;
 	}
+	
+	//Load test org
+	if (organya.Load("test.org"))
+	{
+		error.Push(organya.GetError());
+		return;
+	}
 }
 
 Task_EditorWindow::~Task_EditorWindow()
@@ -30,6 +38,7 @@ Task_EditorWindow::~Task_EditorWindow()
 		delete window;
 }
 
+//Task interface
 bool Task_EditorWindow::PushEvent(const SDL_Event *event)
 {
 	//Push event to window
@@ -50,7 +59,7 @@ bool Task_EditorWindow::PushEvent(const SDL_Event *event)
 			topbar_rect = editor.GetRect(window_rect);
 			editor_rect = editor.GetRect(window_rect);
 			
-			//Present renderer BITCH
+			//Present renderer
 			SDL_RenderPresent(window->renderer);
 			break;
 		}

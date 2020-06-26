@@ -16,6 +16,8 @@ add_executable(OrgMaker3 WIN32
 	"src/Task.h"
 	"src/Task_EditorWindow.cpp"
 	"src/Task_EditorWindow.h"
+	"src/Organya.cpp"
+	"src/Organya.h"
 )
 
 target_include_directories(OrgMaker3 PRIVATE "src")

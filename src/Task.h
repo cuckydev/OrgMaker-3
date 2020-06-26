@@ -26,7 +26,7 @@ class Task
 		//Virtual destructor
 		virtual ~Task() {}
 		
-		//Window interface
+		//Task interface
 		virtual bool PushEvent(const SDL_Event *event) = 0;
 		
 		//Get error
