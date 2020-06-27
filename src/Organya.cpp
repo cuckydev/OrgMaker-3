@@ -170,6 +170,8 @@ namespace Organya
 				
 				//Allocate buffer data
 				float *data = new float[data_size * 2];
+				if (data == nullptr)
+					return true;
 				float *datap = data;
 				
 				//Get wave position
@@ -179,15 +181,13 @@ namespace Organya
 				size_t wave_tp = 0;
 				for (size_t j = 0; j < data_size; j++)
 				{
-					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x100;
-					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x100;
-					
-					//Move forward in wave
+					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x80;
+					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x80;
 					wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
 				}
 				
 				//Create buffer
-				buffer[i][v].SetData(data, data_size, 0);
+				buffer[i][v].SetData(data, data_size, 22050);
 			}
 		}
 		return false;
@@ -222,21 +222,23 @@ namespace Organya
 	
 	void Melody::Update()
 	{
-		//If current buffer hasn't been decided yet or instrument isn't playing, don't update
-		if (current_buffer == nullptr || event_state.y == 0xFF)
-			return;
-		
-		if (event_state.y != event_state_prev.y)
+		//Update frequency for.. every buffer? WHAT? WHY?!
+		if (event_state.y != 0xFF && event_state.y != event_state_prev.y)
 		{
-			//Update frequency for.. every buffer? WHAT? WHY?!
 			for (size_t i = 0; i < 8; i++)
 				for (size_t v = 0; v < 2; v++)
 					buffer[i][v].SetFrequency(((oct_wave[i].wave_size * freq_tbl[event_state.y % 12]) * oct_wave[i].oct_par) / 8 + (freq - 1000));
 		}
 		
+		//If current buffer hasn't been decided yet, don't update
+		if (current_buffer == nullptr)
+			return;
+		
 		//Update volume and panning for current buffer
-		current_buffer->SetVolume((event_state.volume - 0xFF) * 8);
-		current_buffer->SetPan(pan_tbl[event_state.pan]);
+		if (event_state.volume != 0xFF)
+			current_buffer->SetVolume((event_state.volume - 0xFF) * 8);
+		if (event_state.pan != 0xFF)
+			current_buffer->SetPan(pan_tbl[event_state.pan]);
 	}
 	
 	void Melody::Stop()
@@ -250,12 +252,29 @@ namespace Organya
 	//Drum class
 	bool Drum::ConstructBuffers()
 	{
+		//Allocate buffer data
+		size_t data_size = 2000;
+		float *data = new float[data_size * 2];
+		if (data == nullptr)
+			return true;
+		float *datap = data;
+		
+		//Fill buffer data
+		for (size_t i = 0; i < data_size; i++)
+		{
+			float val = (float)rand() / RAND_MAX * 2.0f - 1.0f;
+			*datap++ = val;
+			*datap++ = val;
+		}
+		
+		//Create buffer
+		buffer.SetData(data, data_size, 22050);
 		return false;
 	}
 	
 	void Drum::StopBuffers()
 	{
-		
+		buffer.Stop();
 	}
 	
 	void Drum::Mix(float *stream, int stream_frequency, size_t stream_frames)
@@ -265,17 +284,27 @@ namespace Organya
 	
 	void Drum::Play()
 	{
-		
+		//Rewind and play buffer
+		buffer.Play();
+		buffer.SetLoop(false);
+		buffer.SetPosition(0.0);
 	}
 	
 	void Drum::Update()
 	{
-		
+		//Update frequency, volume, and panning for current buffer
+		if (event_state.y != 0xFF)
+			buffer.SetFrequency(100 + event_state.y * 800);
+		if (event_state.volume != 0xFF)
+			buffer.SetVolume((event_state.volume - 0xFF) * 8);
+		if (event_state.pan != 0xFF)
+			buffer.SetPan(pan_tbl[event_state.pan]);
 	}
 	
 	void Drum::Stop()
 	{
-		
+		//Nothing
+		return;
 	}
 	
 	//Organya instance class
@@ -507,8 +536,8 @@ namespace Organya
 		streamf = (float*)stream;
 		for (auto &i : melody)
 			i.Mix(streamf, config->frequency, config->frames);
-		//for (auto &i : drum)
-		//	i.Mix(streamf, config->frequency, config->frames);
+		for (auto &i : drum)
+			i.Mix(streamf, config->frequency, config->frames);
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)

@@ -36,7 +36,7 @@ namespace Audio
 	
 	//Middle audio callback
 	template <typename T>
-	void MiddleAudioCallback(void *userdata, uint8_t *stream, int len)
+	void MiddleCallback(void *userdata, uint8_t *stream, int len)
 	{
 		Config<T> *config = (Config<T>*)userdata;
 		config->callback(config, stream);
@@ -97,7 +97,7 @@ namespace Audio
 					(uint16_t)config.frames,
 					0, //undocumented `Uint16 padding`
 					0,
-					MiddleAudioCallback<T>,
+					MiddleCallback<T>,
 					(void*)&config,
 				};
 				
@@ -180,7 +180,7 @@ namespace Audio
 			void Stop();
 			
 			void SetLoop(bool _loop);
-			void SetPosition(float _position);
+			void SetPosition(double _position);
 			void SetFrequency(int _frequency);
 			void SetVolume(int32_t _volume);
 			void SetPan(int32_t pan);

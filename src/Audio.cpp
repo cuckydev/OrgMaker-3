@@ -77,7 +77,7 @@ namespace Audio
 					//Stop playing
 					play = false;
 					position = 0;
-					break;
+					return;
 				}
 			}
 		}
@@ -101,6 +101,11 @@ namespace Audio
 	void Buffer::SetFrequency(int _frequency)
 	{
 		frequency = _frequency;
+	}
+	
+	void Buffer::SetPosition(double _position)
+	{
+		position = _position;
 	}
 	
 	void Buffer::SetVolume(int32_t _volume)
