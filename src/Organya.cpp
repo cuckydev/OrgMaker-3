@@ -173,13 +173,13 @@ namespace Organya
 			float *datap = data;
 			
 			//Get wave position
-			const uint8_t *wave = rWave + 0x100 * wave_no;
+			const int8_t *wave = (const int8_t*)rWave + 0x100 * wave_no;
 			
 			//Fill buffer data
 			size_t wave_tp = 0;
 			for (size_t j = 0; j < data_size; j++)
 			{
-				*datap++ = (float)((int8_t)wave[wave_tp]) / 128.0f;
+				*datap++ = (float)wave[wave_tp] / 128.0f;
 				wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
 			}
 			
