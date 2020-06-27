@@ -181,8 +181,8 @@ namespace Organya
 				size_t wave_tp = 0;
 				for (size_t j = 0; j < data_size; j++)
 				{
-					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x80;
-					*datap++ = ((float)wave[wave_tp] - 0x80) / 0x80;
+					*datap++ = ((float)wave[wave_tp] - 128.0f) / 128.0f;
+					*datap++ = ((float)wave[wave_tp] - 128.0f) / 128.0f;
 					wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
 				}
 				
@@ -262,7 +262,7 @@ namespace Organya
 		//Fill buffer data
 		for (size_t i = 0; i < data_size; i++)
 		{
-			float val = (float)rand() / RAND_MAX * 2.0f - 1.0f;
+			float val = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 0.4f;
 			*datap++ = val;
 			*datap++ = val;
 		}
@@ -503,15 +503,14 @@ namespace Organya
 	void Instance::AudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
 	{
 		//Update Organya
-		step_frames = (long double)header.wait / 1000.0L * (long double)config->frequency;
-		
-		while (step_frames_counter < 0.0L || (step_frames_counter += config->frames) >= step_frames)
+		step_frames = (double)header.wait / 1000.0L * (double)config->frequency;
+		step_frames_counter += (double)config->frames;
+		while (step_frames_counter < 0.0L || step_frames_counter >= step_frames)
 		{
 			//Increment song position and update instruments
+			step_frames_counter -= step_frames;
 			if (step_frames_counter < 0.0L)
 				step_frames_counter = 0.0L;
-			else
-				step_frames_counter -= step_frames;
 			
 			for (auto &i : melody)
 				i.SetPosition(x);
