@@ -28,11 +28,15 @@ namespace Audio
 		if (data != nullptr)
 			delete[] data;
 		
-		//Use new data and initialize state
-		data = _data;
+		//Copy data
 		size = _size;
-		position = 0.0f;
+		data = new float[size + 1];
+		for (size_t i = 0; i < size; i++)
+			data[i] = _data[i];
+		data[size] = 0.0f;
 		
+		//Initialize state
+		position = 0.0f;
 		play = false;
 		loop = false;
 		
@@ -58,8 +62,9 @@ namespace Audio
 			//Perform linear interpolation and mix
 			double subsample = fmod(position, 1.0);
 			size_t int_position = (size_t)position;
-			*stream++ += (data[int_position << 1] * (1.0 - subsample) + data[(int_position << 1) + 2] * subsample) * volume_l;
-			*stream++ += (data[(int_position << 1) | 1] * (1.0 - subsample) + data[((int_position << 1) | 1) + 2] * subsample) * volume_r;
+			float sample = (data[int_position] * (1.0 - subsample) + data[int_position + 1] * subsample);
+			*stream++ += sample * volume_l;
+			*stream++ += sample * volume_r;
 			
 			//Increment sample
 			position += advance_delta;
@@ -96,6 +101,8 @@ namespace Audio
 	void Buffer::SetLoop(bool _loop)
 	{
 		loop = _loop;
+		if (data != nullptr)
+			data[size] = loop ? data[0] : 0.0f;
 	}
 	
 	void Buffer::SetFrequency(int _frequency)

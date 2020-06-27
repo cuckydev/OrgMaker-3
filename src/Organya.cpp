@@ -163,32 +163,30 @@ namespace Organya
 	{
 		for (size_t i = 0; i < 8; i++)
 		{
-			for (size_t v = 0; v < 2; v++)
+			//Get sizes
+			size_t wave_size = oct_wave[i].wave_size, data_size = wave_size * (pipi ? oct_wave[i].oct_size : 1);
+			
+			//Allocate buffer data
+			float *data = new float[data_size];
+			if (data == nullptr)
+				return true;
+			float *datap = data;
+			
+			//Get wave position
+			const uint8_t *wave = rWave + 0x100 * wave_no;
+			
+			//Fill buffer data
+			size_t wave_tp = 0;
+			for (size_t j = 0; j < data_size; j++)
 			{
-				//Get sizes
-				size_t wave_size = oct_wave[i].wave_size, data_size = wave_size * (pipi ? oct_wave[i].oct_size : 1);
-				
-				//Allocate buffer data
-				float *data = new float[data_size * 2];
-				if (data == nullptr)
-					return true;
-				float *datap = data;
-				
-				//Get wave position
-				const uint8_t *wave = rWave + 0x100 * wave_no;
-				
-				//Fill buffer data
-				size_t wave_tp = 0;
-				for (size_t j = 0; j < data_size; j++)
-				{
-					*datap++ = ((float)wave[wave_tp] - 128.0f) / 128.0f;
-					*datap++ = ((float)wave[wave_tp] - 128.0f) / 128.0f;
-					wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
-				}
-				
-				//Create buffer
-				buffer[i][v].SetData(data, data_size, 22050);
+				*datap++ = (float)((int8_t)wave[wave_tp]) / 128.0f;
+				wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
 			}
+			
+			//Create buffers
+			for (size_t v = 0; v < 2; v++)
+				buffer[i][v].SetData(data, data_size, 22050);
+			delete[] data;
 		}
 		return false;
 	}
@@ -252,23 +250,6 @@ namespace Organya
 	//Drum class
 	bool Drum::ConstructBuffers()
 	{
-		//Allocate buffer data
-		size_t data_size = 2000;
-		float *data = new float[data_size * 2];
-		if (data == nullptr)
-			return true;
-		float *datap = data;
-		
-		//Fill buffer data
-		for (size_t i = 0; i < data_size; i++)
-		{
-			float val = ((float)rand() / RAND_MAX * 2.0f - 1.0f) * 0.4f;
-			*datap++ = val;
-			*datap++ = val;
-		}
-		
-		//Create buffer
-		buffer.SetData(data, data_size, 22050);
 		return false;
 	}
 	
