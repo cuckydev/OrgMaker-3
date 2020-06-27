@@ -24,8 +24,8 @@ class Task_EditorWindow : public Task
 		//Window
 		Window *window = nullptr;
 		
-		//Current Organya
-		Organya::Organya organya;
+		//Organya instance
+		Organya::Instance organya;
 		
 		//Area placements
 		Placement topbar = {

@@ -4,9 +4,9 @@
 Project: OrgMaker 3
 
 File: src/Organya.h
-Purpose: Declare the Organya song class
+Purpose: Declare Organya classes
 
-Authors: Regan "cuckydev" Green, Daisuke "Pixel" Amaya
+Authors: Regan "cuckydev" Green
 */
 
 //Standard library
@@ -17,6 +17,7 @@ Authors: Regan "cuckydev" Green, Daisuke "Pixel" Amaya
 
 //OrgMaker classes
 #include "Error.h"
+#include "Audio.h"
 
 //Organya namespace
 namespace Organya
@@ -63,10 +64,10 @@ namespace Organya
 			//Music data
 			Event *event = nullptr;	//All the events that belong to this instrument
 			
-		private:
+		protected:
 			//Instrument state
 			Event *event_point = nullptr; //Pointer to the current event being played
-			Event event_state; //Current and previous event state (key, volume, and pan are changed individually)
+			Event event_state, event_state_prev; //Current and previous event state (key, volume, and pan are changed individually)
 			
 			//Playback state
 			uint32_t x;
@@ -76,25 +77,63 @@ namespace Organya
 			~Instrument();
 			
 			//Instrument interface
+			virtual bool ConstructBuffers() = 0;
+			virtual void StopBuffers() = 0;
+			virtual void Mix(float *stream, int stream_frequency, size_t stream_frames) = 0;
+			
 			void SetPosition(uint32_t _x);
 			void GetState();
 			void PlayData();
+			
+		private:
+			//Internal instrument interface
+			virtual void Play() = 0;
+			virtual void Update() = 0;
+			virtual void Stop() = 0;
 	};
 
-	struct Melody : Instrument
+	class Melody : public Instrument
 	{
-		//Sound buffers for playback
-		
+		private:
+			//Sound buffers for playback
+			Audio::Buffer buffer[8][2];
+			Audio::Buffer *current_buffer = nullptr;
+			bool twin = false;
+			
+		public:
+			//Instrument interface
+			bool ConstructBuffers();
+			void StopBuffers();
+			void Mix(float *stream, int stream_frequency, size_t stream_frames);
+			
+		private:
+			//Internal instrument interface
+			void Play();
+			void Update();
+			void Stop();
 	};
 
-	struct Drum : Instrument
+	class Drum : public Instrument
 	{
-		//Sound buffer for playback
-		
+		private:
+			//Sound buffer for playback
+			Audio::Buffer buffer;
+			
+		public:
+			//Instrument interface
+			bool ConstructBuffers();
+			void StopBuffers();
+			void Mix(float *stream, int stream_frequency, size_t stream_frames);
+			
+		protected:
+			//Internal instrument interface
+			void Play();
+			void Update();
+			void Stop();
 	};
-
-	//Organya class
-	class Organya
+	
+	//Organya instance class
+	class Instance
 	{
 		private:
 			//Error
@@ -103,26 +142,44 @@ namespace Organya
 			//Path to save song to
 			std::string path;
 			
-			//Organya data and state
+			//Audio instance
+			Audio::Instance<Instance*> audio;
+			
+			//Organya data
 			Header header;
 			std::array<Melody, 8> melody = {};
 			std::array<Drum, 8> drum = {};
 			
+			//Playback state
+			bool playing = false;
+			long double step_frames, step_frames_counter;
+			uint32_t x;
+			
 		public:
 			//Constructor and destructor
-			Organya() {}
-			Organya(std::istream &stream) { Load(stream); }
-			Organya(std::string _path) { Load(_path); }
-			~Organya();
+			Instance() { InitializeAudio(); }
+			Instance(std::istream &stream) { Load(stream); InitializeAudio(); }
+			Instance(std::string _path) { Load(_path); InitializeAudio(); }
+			~Instance();
 			
 			//Loading
 			bool Load(std::istream &stream);
 			bool Load(std::string _path);
 			
+			//Organya interface
+			bool SetPosition(uint32_t x);
+			bool Play();
+			bool Stop();
+			
 			//Get error
 			const Error &GetError() const { return error; }
 			
 		private:
+			//Audio
+			void AudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
+			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
+			bool InitializeAudio();
+			
 			//Internal reading functions
 			bool ReadInstrument(std::istream &stream, Instrument &i, uint16_t &note_num);
 			bool ReadEvents(std::istream &stream, Instrument &i, uint16_t note_num);

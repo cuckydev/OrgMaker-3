@@ -16,7 +16,7 @@ Task_EditorWindow::Task_EditorWindow()
 	//Create window
 	if ((window = new Window(	"OrgMaker 3 - Untitled",
 								{SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 854, 480},
-								SDL_WINDOW_MAXIMIZED | SDL_WINDOW_RESIZABLE)) == nullptr ||
+								0 | SDL_WINDOW_RESIZABLE)) == nullptr ||
 		window->GetError())
 	{
 		error.Push(window->GetError());
@@ -24,11 +24,14 @@ Task_EditorWindow::Task_EditorWindow()
 	}
 	
 	//Load test org
-	if (organya.Load("test.org"))
+	if (organya.GetError() || organya.Load("test.org"))
 	{
 		error.Push(organya.GetError());
 		return;
 	}
+	
+	//Play org
+	organya.Play();
 }
 
 Task_EditorWindow::~Task_EditorWindow()
