@@ -21,7 +21,7 @@ namespace Organya
 {
 	//Audio config
 	static const int audio_frequency = 48000;
-	static const uint16_t audio_frames = audio_frequency;
+	static const uint16_t audio_frames = 0x200;
 	
 	//Instrument class
 	//Destructor
@@ -81,6 +81,8 @@ namespace Organya
 		
 		//Go backward filling last event parameters until we hit a note
 		Event *event_check = event_point;
+		if (x < event_check->x)
+			return;
 		
 		while (event_check != nullptr)
 		{
@@ -497,25 +499,13 @@ namespace Organya
 			//Increment position in song
 			if (++x >= header.end_x)
 				x = header.repeat_x;
-			
-			//Mix instruments
-			int frames_left = (streamend - streamf) / 2;
-			for (auto &i : melody)
-				i.Mix(streamf, config->frequency, step_frames > frames_left ? frames_left : step_frames);
-			for (auto &i : drum)
-				i.Mix(streamf, config->frequency, step_frames > frames_left ? frames_left : step_frames);
-			streamf += step_frames * 2;
 		}
 		
 		//Mix instruments to the rest of the buffer
-		int frames_left = (streamend - streamf) / 2;
-		if (frames_left > 0)
-		{
-			for (auto &i : melody)
-				i.Mix(streamf, config->frequency, frames_left);
-			for (auto &i : drum)
-				i.Mix(streamf, config->frequency, frames_left);
-		}
+		for (auto &i : melody)
+			i.Mix(streamf, config->frequency, config->frames);
+		for (auto &i : drum)
+			i.Mix(streamf, config->frequency, config->frames);
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
