@@ -61,6 +61,9 @@ namespace Organya
 		
 		//Remember given position
 		x = _x;
+		
+		//Get new event state
+		GetState();
 	}
 	
 	void Instrument::GetState()
@@ -73,28 +76,28 @@ namespace Organya
 		event_state_prev = event_state;
 		event_state = {};
 		
-		//If we're behind the event (first event), don't play anything
-		if (x < event_point->x || event_point->prev == nullptr)
-			return;
-		
 		//Go backward filling last event parameters until we hit a note
 		Event *event_check = event_point;
 		
 		while (event_check != nullptr)
 		{
 			//Update volume
-			if (event_check->volume != 0xFF)
+			if (event_check->volume != 0xFF && event_state.volume == 0xFF)
 				event_state.volume = event_check->volume;
 			
 			//Update volume
-			if (event_check->pan != 0xFF)
+			if (event_check->pan != 0xFF && event_state.pan == 0xFF)
 				event_state.pan = event_check->pan;
 			
 			//Update key
 			if (event_check->y != 0xFF)
 			{
+				event_state.x = event_check->x;
 				event_state.y = event_check->y;
-				event_state.length = event_check->length - (x - event_check->x);
+				if (x >= (event_check->x + event_check->length))
+					event_state.length = 0;
+				else
+					event_state.length = event_check->length - (x - event_check->x);
 				break;
 			}
 			
@@ -103,40 +106,23 @@ namespace Organya
 		}
 	}
 	
-	void Instrument::PlayData()
+	void Instrument::PlayState()
 	{
 		//Don't do anything if no event could be played
 		if (event_point == nullptr)
 			return;
 		
-		//Play current event if x is equal to the event's x
+		//If new event has played, update
 		if (x == event_point->x)
 		{
-			//Change key
 			if (event_point->y != 0xFF)
-			{
-				//Start playing instrument
-				event_state.y = event_point->y;
-				event_state.length = event_point->length;
 				Play();
-			}
-			
-			//Change volume
-			if (event_point->volume != 0xFF)
-				event_state.volume = event_point->volume;
-			
-			//Change panning
-			if (event_point->pan != 0xFF)
-				event_state.pan = event_point->pan;
-			
-			//Update instrument
 			Update();
 		}
 		
+		//If no event is playing, stop
 		if (event_state.length == 0)
 			Stop();
-		if (event_state.length > 0)
-			event_state.length--;
 	}
 	
 	//Melody class
@@ -221,7 +207,7 @@ namespace Organya
 	void Melody::Update()
 	{
 		//Update frequency for.. every buffer? WHAT? WHY?!
-		if (event_state.y != 0xFF && event_state.y != event_state_prev.y)
+		if (event_state.y != 0xFF)
 		{
 			for (size_t i = 0; i < 8; i++)
 				for (size_t v = 0; v < 2; v++)
@@ -433,11 +419,6 @@ namespace Organya
 		for (auto &i : drum)
 			i.SetPosition(x);
 		
-		for (auto &i : melody)
-			i.GetState();
-		for (auto &i : drum)
-			i.GetState();
-		
 		//Reset step frames counter
 		step_frames_counter = -1.0L;
 		
@@ -499,9 +480,9 @@ namespace Organya
 				i.SetPosition(x);
 			
 			for (auto &i : melody)
-				i.PlayData();
+				i.PlayState();
 			for (auto &i : drum)
-				i.PlayData();
+				i.PlayState();
 			
 			if (++x >= header.end_x)
 				x = header.repeat_x;

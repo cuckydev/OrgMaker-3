@@ -83,7 +83,7 @@ namespace Organya
 			
 			void SetPosition(uint32_t _x);
 			void GetState();
-			void PlayData();
+			void PlayState();
 			
 		private:
 			//Internal instrument interface
