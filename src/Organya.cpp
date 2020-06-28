@@ -10,6 +10,9 @@ Authors: Regan "cuckydev" Green
 //Standard library
 #include <iostream>
 
+//Resources
+#include "rWave.h"
+
 //Declaration
 #include "Organya.h"
 
@@ -18,7 +21,7 @@ namespace Organya
 {
 	//Audio config
 	static const int audio_frequency = 48000;
-	static const uint16_t audio_frames = 0x200;
+	static const uint16_t audio_frames = audio_frequency;
 	
 	//Instrument class
 	//Destructor
@@ -142,8 +145,6 @@ namespace Organya
 		{16,  64,  28}, // 6 Oct
 		{8,   128, 32}, // 7 Oct
 	};
-	
-	#include "rWave.h"
 	
 	bool Melody::ConstructBuffers()
 	{
@@ -464,41 +465,57 @@ namespace Organya
 	//Audio
 	void Instance::AudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
 	{
-		//Update Organya
-		step_frames = (double)header.wait / 1000.0L * (double)config->frequency;
-		step_frames_counter += (double)config->frames;
-		while (step_frames_counter < 0.0L || step_frames_counter >= step_frames)
-		{
-			//Increment song position and update instruments
-			step_frames_counter -= step_frames;
-			if (step_frames_counter < 0.0L)
-				step_frames_counter = 0.0L;
-			
-			for (auto &i : melody)
-				i.SetPosition(x);
-			for (auto &i : drum)
-				i.SetPosition(x);
-			
-			for (auto &i : melody)
-				i.PlayState();
-			for (auto &i : drum)
-				i.PlayState();
-			
-			if (++x >= header.end_x)
-				x = header.repeat_x;
-		}
-		
 		//Clear stream
 		float *streamf = (float*)stream;
+		float *streamend = streamf + config->frames * 2;
 		for (size_t i = 0; i < config->frames * 2; i++)
 			*streamf++ = 0.0f;
-		
-		//Mix instruments
 		streamf = (float*)stream;
-		for (auto &i : melody)
-			i.Mix(streamf, config->frequency, config->frames);
-		for (auto &i : drum)
-			i.Mix(streamf, config->frequency, config->frames);
+		
+		//Update and mix Organya
+		step_frames = header.wait * config->frequency / 1000;
+		step_frames_counter += config->frames;
+		
+		while (step_frames_counter < 0 || step_frames_counter >= step_frames)
+		{
+			//Push step counter back
+			step_frames_counter -= step_frames;
+			if (step_frames_counter < 0)
+				step_frames_counter = 0;
+			
+			//Update instruments
+			for (auto &i : melody)
+				i.SetPosition(x);
+			for (auto &i : drum)
+				i.SetPosition(x);
+			
+			for (auto &i : melody)
+				i.PlayState();
+			for (auto &i : drum)
+				i.PlayState();
+			
+			//Increment position in song
+			if (++x >= header.end_x)
+				x = header.repeat_x;
+			
+			//Mix instruments
+			int frames_left = (streamend - streamf) / 2;
+			for (auto &i : melody)
+				i.Mix(streamf, config->frequency, step_frames > frames_left ? frames_left : step_frames);
+			for (auto &i : drum)
+				i.Mix(streamf, config->frequency, step_frames > frames_left ? frames_left : step_frames);
+			streamf += step_frames * 2;
+		}
+		
+		//Mix instruments to the rest of the buffer
+		int frames_left = (streamend - streamf) / 2;
+		if (frames_left > 0)
+		{
+			for (auto &i : melody)
+				i.Mix(streamf, config->frequency, frames_left);
+			for (auto &i : drum)
+				i.Mix(streamf, config->frequency, frames_left);
+		}
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
