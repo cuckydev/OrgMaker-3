@@ -21,7 +21,7 @@ namespace Organya
 {
 	//Audio config
 	static const int audio_frequency = 48000;
-	static const uint16_t audio_frames = audio_frequency;
+	static const uint16_t audio_frames = 0x200;
 	
 	//Instrument class
 	//Destructor
@@ -476,23 +476,21 @@ namespace Organya
 		
 		//Update and mix Organya
 		int step_frames = header.wait * config->frequency / 1000;
-		if (step_frames_counter <= 0)
-			step_frames_counter = step_frames;
 		
 		int frames_left = config->frames;
 		while (frames_left > 0)
 		{
-			int frames = step_frames_counter;
+			int frames = step_frames - step_frames_counter;
 			if (frames > frames_left)
 			{
 				//Clip to end of buffer
-				step_frames_counter = step_frames - frames_left;
+				step_frames_counter = frames_left;
 				frames = frames_left;
 			}
 			else
 			{
 				//Reset step frames counter
-				step_frames_counter = step_frames;
+				step_frames_counter = 0;
 				
 				//Update instruments
 				for (auto &i : melody)
