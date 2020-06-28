@@ -484,7 +484,7 @@ namespace Organya
 			if (frames > frames_left)
 			{
 				//Clip to end of buffer
-				step_frames_counter = frames_left;
+				step_frames_counter += frames_left;
 				frames = frames_left;
 			}
 			else
