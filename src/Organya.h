@@ -152,7 +152,7 @@ namespace Organya
 			
 			//Playback state
 			bool playing = false;
-			int step_frames, step_frames_counter;
+			int step_frames_counter;
 			uint32_t x;
 			
 		public:

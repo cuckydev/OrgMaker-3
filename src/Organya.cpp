@@ -21,7 +21,7 @@ namespace Organya
 {
 	//Audio config
 	static const int audio_frequency = 48000;
-	static const uint16_t audio_frames = 0x200;
+	static const uint16_t audio_frames = audio_frequency;
 	
 	//Instrument class
 	//Destructor
@@ -423,7 +423,7 @@ namespace Organya
 			i.SetPosition(x);
 		
 		//Reset step frames counter
-		step_frames_counter = -1.0L;
+		step_frames_counter = 0;
 		
 		//Unlock audio
 		if (audio.Unlock())
@@ -475,37 +475,49 @@ namespace Organya
 		streamf = (float*)stream;
 		
 		//Update and mix Organya
-		step_frames = header.wait * config->frequency / 1000;
-		step_frames_counter += config->frames;
+		int step_frames = header.wait * config->frequency / 1000;
+		if (step_frames_counter <= 0)
+			step_frames_counter = step_frames;
 		
-		while (step_frames_counter < 0 || step_frames_counter >= step_frames)
+		int frames_left = config->frames;
+		while (frames_left > 0)
 		{
-			//Push step counter back
-			step_frames_counter -= step_frames;
-			if (step_frames_counter < 0)
-				step_frames_counter = 0;
+			int frames = step_frames_counter;
+			if (frames > frames_left)
+			{
+				//Clip to end of buffer
+				step_frames_counter = step_frames - frames_left;
+				frames = frames_left;
+			}
+			else
+			{
+				//Reset step frames counter
+				step_frames_counter = step_frames;
+				
+				//Update instruments
+				for (auto &i : melody)
+					i.SetPosition(x);
+				for (auto &i : drum)
+					i.SetPosition(x);
+				
+				for (auto &i : melody)
+					i.PlayState();
+				for (auto &i : drum)
+					i.PlayState();
+				
+				//Increment position in song
+				if (++x >= header.end_x)
+					x = header.repeat_x;
+			}
 			
-			//Update instruments
+			//Mix instruments
 			for (auto &i : melody)
-				i.SetPosition(x);
+				i.Mix(streamf, config->frequency, frames);
 			for (auto &i : drum)
-				i.SetPosition(x);
-			
-			for (auto &i : melody)
-				i.PlayState();
-			for (auto &i : drum)
-				i.PlayState();
-			
-			//Increment position in song
-			if (++x >= header.end_x)
-				x = header.repeat_x;
+				i.Mix(streamf, config->frequency, frames);
+			streamf += frames * 2;
+			frames_left -= frames;
 		}
-		
-		//Mix instruments to the rest of the buffer
-		for (auto &i : melody)
-			i.Mix(streamf, config->frequency, config->frames);
-		for (auto &i : drum)
-			i.Mix(streamf, config->frequency, config->frames);
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
