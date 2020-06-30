@@ -24,7 +24,7 @@ Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider, i
 	if (argc > 1)
 	{
 		//Load, save, and play given org
-		if (organya.Load(argv[1]) || organya.Save())
+		if (organya.Load(argv[1]))
 		{
 			error.Push(organya.GetError());
 			return;

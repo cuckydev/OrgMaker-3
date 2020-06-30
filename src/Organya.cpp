@@ -549,7 +549,7 @@ namespace Organya
 	bool Instance::Save(std::string _path)
 	{
 		//Open stream
-		std::ofstream stream(_path + ".tmp", std::ofstream::binary);
+		std::ofstream stream(_path, std::ofstream::binary);
 		if (!stream.is_open())
 			return error.Push("Failed to save to " + _path);
 		
