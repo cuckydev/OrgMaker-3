@@ -78,7 +78,6 @@ namespace Organya
 			
 			//Playback state
 			uint32_t x;
-			bool playing = false;
 			
 		public:
 			//Destructor

@@ -259,9 +259,6 @@ namespace Organya
 				if (buffer[i][v].SetData(data, data_size, 22050))
 					return error.Push("Failed to set buffer data");
 			delete[] data;
-			
-			//Reset state
-			playing = false;
 		}
 		return false;
 	}
@@ -282,12 +279,12 @@ namespace Organya
 	
 	void Melody::Play()
 	{
-		//Stop current buffer and switch to second one
-		Stop();
+		//Stop current buffer and switch to new one
+		if (current_buffer != nullptr)
+			current_buffer->Play(false);
 		twin = !twin;
 		current_buffer = &buffer[event_state.y / 12][twin];
 		current_buffer->Play(!pipi);
-		playing = true;
 	}
 	
 	static const int16_t freq_tbl[12] = {262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494};
@@ -295,15 +292,15 @@ namespace Organya
 	
 	void Melody::Update()
 	{
-		//Update frequency for.. every buffer? WHAT? WHY?!
 		if (event_state.y != 0xFF)
 		{
+			//Update frequency for.. every buffer? WHAT? WHY?!
 			for (size_t i = 0; i < 8; i++)
 				for (size_t v = 0; v < 2; v++)
 					buffer[i][v].SetFrequency(((oct_wave[i].wave_size * freq_tbl[event_state.y % 12]) * oct_wave[i].oct_par) / 8 + (freq - 1000));
 		}
 		
-		//If current buffer hasn't been decided yet, don't update
+		//If not playing, don't update
 		if (current_buffer == nullptr)
 			return;
 		
@@ -317,10 +314,10 @@ namespace Organya
 	void Melody::Stop()
 	{
 		//If current buffer hasn't been decided yet, or we're not playing, don't stop
-		if (current_buffer == nullptr || !playing)
+		if (current_buffer == nullptr)
 			return;
 		current_buffer->Play(false);
-		playing = false;
+		current_buffer = nullptr;
 	}
 	
 	//Drum class
@@ -348,9 +345,6 @@ namespace Organya
 		if (buffer.SetData(data, size, 22050))
 			return error.Push("Failed to set buffer data");
 		delete[] data;
-		
-		//Reset state
-		playing = false;
 		return false;
 	}
 	
@@ -374,7 +368,7 @@ namespace Organya
 	
 	void Drum::Update()
 	{
-		//Update volume and panning for current buffer
+		//Update volume and panning for buffer
 		if (event_state.volume != 0xFF)
 			buffer.SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
