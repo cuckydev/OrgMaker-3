@@ -86,7 +86,7 @@ namespace Organya
 			//Instrument interface
 			virtual bool ConstructBuffers(const Instance &organya) = 0;
 			virtual void StopBuffers() = 0;
-			virtual void Mix(float *stream, int stream_frequency, size_t stream_frames) = 0;
+			virtual void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames) = 0;
 			
 			void SetPosition(uint32_t _x);
 			void GetState();
@@ -114,7 +114,7 @@ namespace Organya
 			//Instrument interface
 			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
-			void Mix(float *stream, int stream_frequency, size_t stream_frames);
+			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 		private:
 			//Internal instrument interface
@@ -133,7 +133,7 @@ namespace Organya
 			//Instrument interface
 			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
-			void Mix(float *stream, int stream_frequency, size_t stream_frames);
+			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 		protected:
 			//Internal instrument interface
@@ -206,7 +206,7 @@ namespace Organya
 			
 		private:
 			//Audio
-			void AudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
+			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
 			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
 			bool InitializeAudio();
 			

@@ -162,7 +162,7 @@ namespace Audio
 			
 			//Audio state
 			bool play = false, loop = false;
-			int frequency;
+			unsigned int frequency;
 			float volume, volume_l, volume_r, pan_l, pan_r;
 			
 		public:
@@ -172,16 +172,16 @@ namespace Audio
 			~Buffer();
 			
 			//Buffer interface
-			bool SetData(float *_data, size_t _size, int _frequency);
+			bool SetData(float *_data, size_t _size, unsigned int _frequency);
 			
-			void Mix(float *stream, int stream_frequency, size_t stream_frames);
+			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 			void Play();
 			void Stop();
 			
 			void SetLoop(bool _loop);
 			void SetPosition(double _position);
-			void SetFrequency(int _frequency);
+			void SetFrequency(unsigned int _frequency);
 			void SetVolume(int32_t _volume);
 			void SetPan(int32_t pan);
 			

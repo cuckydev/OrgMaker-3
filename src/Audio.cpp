@@ -22,7 +22,7 @@ namespace Audio
 	}
 	
 	//Audio buffer interface
-	bool Buffer::SetData(float *_data, size_t _size, int _frequency)
+	bool Buffer::SetData(float *_data, size_t _size, unsigned int _frequency)
 	{
 		//Delete previous data
 		if (data != nullptr)
@@ -50,7 +50,7 @@ namespace Audio
 		return false;
 	}
 	
-	void Buffer::Mix(float *stream, int stream_frequency, size_t stream_frames)
+	void Buffer::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		//Don't mix if not playing or hasn't been setup yet
 		if (play == false || data == nullptr)
@@ -107,7 +107,7 @@ namespace Audio
 			data[size] = loop ? data[0] : 0.0f;
 	}
 	
-	void Buffer::SetFrequency(int _frequency)
+	void Buffer::SetFrequency(unsigned int _frequency)
 	{
 		frequency = _frequency;
 	}

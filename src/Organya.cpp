@@ -188,7 +188,7 @@ namespace Organya
 				buffer[i][v].Stop();
 	}
 	
-	void Melody::Mix(float *stream, int stream_frequency, size_t stream_frames)
+	void Melody::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		for (size_t i = 0; i < 8; i++)
 			for (size_t v = 0; v < 2; v++)
@@ -323,7 +323,7 @@ namespace Organya
 		buffer.Stop();
 	}
 	
-	void Drum::Mix(float *stream, int stream_frequency, size_t stream_frames)
+	void Drum::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		buffer.Mix(stream, stream_frequency, stream_frames);
 	}
@@ -565,19 +565,13 @@ namespace Organya
 	}
 	
 	//Audio
-	void Instance::AudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
+	void Instance::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
-		//Clear stream
-		float *streamf = (float*)stream;
-		for (size_t i = 0; i < config->frames * 2; i++)
-			*streamf++ = 0.0f;
-		streamf = (float*)stream;
-		
 		//Update and mix Organya
-		int step_frames = header.wait * config->frequency / 1000;
+		int step_frames = header.wait * stream_frequency / 1000;
 		int frames_done = 0;
 		
-		while (frames_done != config->frames)
+		while (frames_done < stream_frames)
 		{
 			if (step_frames_counter == 0)
 			{
@@ -601,16 +595,16 @@ namespace Organya
 			}
 			
 			//Get frames to do
-			int frames_to_do = config->frames - frames_done;
+			int frames_to_do = stream_frames - frames_done;
 			if (frames_to_do > step_frames_counter)
 				frames_to_do = step_frames_counter;
 			
 			//Mix instruments
 			for (auto &i : melody)
-				i.Mix(streamf, config->frequency, frames_to_do);
+				i.Mix(stream, stream_frequency, frames_to_do);
 			for (auto &i : drum)
-				i.Mix(streamf, config->frequency, frames_to_do);
-			streamf += frames_to_do * 2;
+				i.Mix(stream, stream_frequency, frames_to_do);
+			stream += frames_to_do * 2;
 			frames_done += frames_to_do;
 			step_frames_counter -= frames_to_do;
 		}
@@ -618,8 +612,14 @@ namespace Organya
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
 	{
+		//Clear stream
+		float *streamf = (float*)stream;
+		for (size_t i = 0; i < config->frames * 2; i++)
+			*streamf++ = 0.0f;
+		streamf = (float*)stream;
+		
 		//Use the callback from the specific instance in the config
-		config->userdata->AudioCallback(config, stream);
+		config->userdata->Mix(streamf, config->frequency, config->frames);
 	}
 	
 	bool Instance::InitializeAudio()
