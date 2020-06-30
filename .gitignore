@@ -1,2 +1,6 @@
 # Exclude build directory
 build/
+
+# Exclude potential binaries
+bin/OrgMaker3
+bin/OrgMaker3.exe

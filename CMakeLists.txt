@@ -24,6 +24,10 @@ add_executable(OrgMaker3 WIN32
 
 target_include_directories(OrgMaker3 PRIVATE "src")
 
+set_target_properties(OrgMaker3 PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
+)
+
 #######################
 # CGE Backend Linking #
 #######################

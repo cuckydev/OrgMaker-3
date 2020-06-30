@@ -8,6 +8,7 @@ Authors: Regan "cuckydev" Green, Daisuke "Pixel" Amaya
 */
 
 //Standard library
+#include <algorithm>
 #include <iostream>
 
 //Resources
@@ -237,8 +238,71 @@ namespace Organya
 	}
 	
 	//Drum class
+	static const std::string drum_name[] = {
+		"Bass01",
+		"Bass02",
+		"Snare01",
+		"Snare02",
+		"Tom01",
+		
+		"HiClose",
+		"HiOpen",
+		"Crash",
+		"Per01",
+		"Per02",
+		
+		"Bass03",
+		"Tom02",
+		"Bass04",
+		"Bass05",
+		"Snare03",
+		
+		"Snare04",
+		"HiClose02",
+		"HiOpen02",
+		"HiClose03",
+		"HiOpen03",
+		
+		"Crash02",
+		"RevSym01",
+		"Ride01",
+		"Tom03",
+		"Tom04",
+		
+		"OrcDrm01",
+		"Bell",
+		"Cat",
+		"Bass06",
+		"Bass07",
+		
+		"Snare05",
+		"Snare06",
+		"Snare07",
+		"Tom05",
+		"HiOpen04",
+		
+		"HiClose04",
+		"Clap01",
+		"Pesi01",
+		"Quick01",
+		"Bass08",
+		
+		"Snare08",
+		"HiClose05",
+	};
 	bool Drum::ConstructBuffers()
 	{
+		std::string name = drum_name[wave_no];
+		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c){return std::toupper(c);});
+		std::ifstream stream("build/Data/Resources/" + name, std::ifstream::ate | std::ifstream::binary);
+		size_t size = stream.tellg();
+		stream.seekg(0, std::ifstream::beg);
+		float *data = new float[size];
+		float *datap = data;
+		for (size_t i = 0; i < size; i++)
+			*datap++ = (float)(int8_t)((uint8_t)stream.get() - 0x80) / 128.0f;
+		buffer.SetData(data, size, 22050);
+		delete[] data;
 		return false;
 	}
 	
@@ -514,51 +578,6 @@ namespace Organya
 			frames_done += frames_to_do;
 			step_frames_counter -= frames_to_do;
 		}
-		
-		/*
-		//Update and mix Organya
-		int step_frames = header.wait * config->frequency / 1000;
-		
-		int frames_left = config->frames;
-		while (frames_left > 0)
-		{
-			int frames = step_frames - step_frames_counter;
-			if (frames > frames_left)
-			{
-				//Clip to end of buffer
-				step_frames_counter += frames_left;
-				frames = frames_left;
-			}
-			else
-			{
-				//Reset step frames counter
-				step_frames_counter = 0;
-				
-				//Update instruments
-				for (auto &i : melody)
-					i.SetPosition(x);
-				for (auto &i : drum)
-					i.SetPosition(x);
-				
-				for (auto &i : melody)
-					i.PlayState();
-				for (auto &i : drum)
-					i.PlayState();
-				
-				//Increment position in song
-				if (++x >= header.end_x)
-					x = header.repeat_x;
-			}
-			
-			//Mix instruments
-			for (auto &i : melody)
-				i.Mix(streamf, config->frequency, frames);
-			for (auto &i : drum)
-				i.Mix(streamf, config->frequency, frames);
-			streamf += frames * 2;
-			frames_left -= frames;
-		}
-		*/
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
