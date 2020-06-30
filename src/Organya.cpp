@@ -21,7 +21,7 @@ namespace Organya
 {
 	//Audio config
 	static const int audio_frequency = 44100;
-	static const uint16_t audio_frames = audio_frequency;
+	static const uint16_t audio_frames = 0x200;
 	
 	//Instrument class
 	//Destructor
@@ -469,11 +469,53 @@ namespace Organya
 	{
 		//Clear stream
 		float *streamf = (float*)stream;
-		float *streamend = streamf + config->frames * 2;
 		for (size_t i = 0; i < config->frames * 2; i++)
 			*streamf++ = 0.0f;
 		streamf = (float*)stream;
 		
+		//Update and mix Organya
+		int step_frames = header.wait * config->frequency / 1000;
+		int frames_done = 0;
+		
+		while (frames_done != config->frames)
+		{
+			if (step_frames_counter == 0)
+			{
+				//Reset step frames counter
+				step_frames_counter = step_frames;
+				
+				//Update instruments
+				for (auto &i : melody)
+					i.SetPosition(x);
+				for (auto &i : drum)
+					i.SetPosition(x);
+				
+				for (auto &i : melody)
+					i.PlayState();
+				for (auto &i : drum)
+					i.PlayState();
+				
+				//Increment position in song
+				if (++x >= header.end_x)
+					x = header.repeat_x;
+			}
+			
+			//Get frames to do
+			int frames_to_do = config->frames - frames_done;
+			if (frames_to_do > step_frames_counter)
+				frames_to_do = step_frames_counter;
+			
+			//Mix instruments
+			for (auto &i : melody)
+				i.Mix(streamf, config->frequency, frames_to_do);
+			for (auto &i : drum)
+				i.Mix(streamf, config->frequency, frames_to_do);
+			streamf += frames_to_do * 2;
+			frames_done += frames_to_do;
+			step_frames_counter -= frames_to_do;
+		}
+		
+		/*
 		//Update and mix Organya
 		int step_frames = header.wait * config->frequency / 1000;
 		
@@ -516,6 +558,7 @@ namespace Organya
 			streamf += frames * 2;
 			frames_left -= frames;
 		}
+		*/
 	}
 	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
