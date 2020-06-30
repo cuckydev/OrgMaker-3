@@ -78,6 +78,7 @@ namespace Organya
 			
 			//Playback state
 			uint32_t x;
+			bool playing = false;
 			
 		public:
 			//Destructor
@@ -90,7 +91,7 @@ namespace Organya
 			
 			void SetPosition(uint32_t _x);
 			void GetState();
-			void PlayState();
+			void UpdateState();
 			
 			//Get error
 			const Error &GetError() const { return error; }
@@ -188,7 +189,7 @@ namespace Organya
 			bool Save(std::string _path);
 			bool Save();
 			
-			void New();
+			bool New();
 			
 			//Organya interface
 			bool SetPosition(uint32_t x);

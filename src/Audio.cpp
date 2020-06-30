@@ -90,21 +90,17 @@ namespace Audio
 		}
 	}
 	
-	void Buffer::Play()
+	void Buffer::Play(bool _loop)
 	{
 		play = true;
+		loop = _loop;
+		if (data != nullptr)
+			data[size] = loop ? data[0] : 0.0f;
 	}
 	
 	void Buffer::Stop()
 	{
 		play = false;
-	}
-	
-	void Buffer::SetLoop(bool _loop)
-	{
-		loop = _loop;
-		if (data != nullptr)
-			data[size] = loop ? data[0] : 0.0f;
 	}
 	
 	void Buffer::SetFrequency(unsigned int _frequency)

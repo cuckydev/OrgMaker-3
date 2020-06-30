@@ -30,9 +30,10 @@ Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider, i
 			return;
 		}
 	}
-	else
+	else if (organya.New())
 	{
-		organya.New();
+		error.Push(organya.GetError());
+		return;
 	}
 	
 	//TEMP: play org

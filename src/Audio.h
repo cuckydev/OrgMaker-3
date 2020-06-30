@@ -176,10 +176,9 @@ namespace Audio
 			
 			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
 			
-			void Play();
+			void Play(bool _loop);
 			void Stop();
 			
-			void SetLoop(bool _loop);
 			void SetPosition(double _position);
 			void SetFrequency(unsigned int _frequency);
 			void SetVolume(int32_t _volume);

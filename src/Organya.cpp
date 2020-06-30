@@ -122,9 +122,6 @@ namespace Organya
 		
 		//Remember given position
 		x = _x;
-		
-		//Get new event state
-		GetState();
 	}
 	
 	void Instrument::GetState()
@@ -157,10 +154,18 @@ namespace Organya
 			{
 				event_state.x = event_check->x;
 				event_state.y = event_check->y;
+				
 				if (x >= (event_check->x + event_check->length))
+				{
 					event_state.length = 0;
+					Stop();
+				}
 				else
+				{
 					event_state.length = event_check->length - (x - event_check->x);
+					Play();
+					Update();
+				}
 				break;
 			}
 			
@@ -169,23 +174,40 @@ namespace Organya
 		}
 	}
 	
-	void Instrument::PlayState()
+	void Instrument::UpdateState()
 	{
 		//Don't do anything if no event could be played
 		if (event_point == nullptr)
 			return;
 		
-		//If new event has played, update
+		//If new event has played, update state
 		if (x == event_point->x)
 		{
+			//Update and play key
 			if (event_point->y != 0xFF)
+			{
+				event_state.y = event_point->y;
+				event_state.length = event_point->length;
 				Play();
+			}
+			
+			//Update volume
+			if (event_point->volume != 0xFF)
+				event_state.volume = event_point->volume;
+			
+			//Update pan
+			if (event_point->pan != 0xFF)
+				event_state.pan = event_point->pan;
+			
+			//Update buffers
 			Update();
 		}
 		
-		//If no event is playing, stop
+		//Stop once length reaches 0
 		if (event_state.length == 0)
 			Stop();
+		else
+			event_state.length--;
 	}
 	
 	//Melody class
@@ -237,6 +259,9 @@ namespace Organya
 				if (buffer[i][v].SetData(data, data_size, 22050))
 					return error.Push("Failed to set buffer data");
 			delete[] data;
+			
+			//Reset state
+			playing = false;
 		}
 		return false;
 	}
@@ -261,8 +286,8 @@ namespace Organya
 		Stop();
 		twin = !twin;
 		current_buffer = &buffer[event_state.y / 12][twin];
-		current_buffer->Play();
-		current_buffer->SetLoop(!pipi);
+		current_buffer->Play(!pipi);
+		playing = true;
 	}
 	
 	static const int16_t freq_tbl[12] = {262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494};
@@ -291,10 +316,11 @@ namespace Organya
 	
 	void Melody::Stop()
 	{
-		//If current buffer hasn't been decided yet, don't stop
-		if (current_buffer == nullptr)
+		//If current buffer hasn't been decided yet, or we're not playing, don't stop
+		if (current_buffer == nullptr || !playing)
 			return;
-		current_buffer->SetLoop(false);
+		current_buffer->Play(false);
+		playing = false;
 	}
 	
 	//Drum class
@@ -322,6 +348,9 @@ namespace Organya
 		if (buffer.SetData(data, size, 22050))
 			return error.Push("Failed to set buffer data");
 		delete[] data;
+		
+		//Reset state
+		playing = false;
 		return false;
 	}
 	
@@ -338,16 +367,14 @@ namespace Organya
 	void Drum::Play()
 	{
 		//Rewind and play buffer
-		buffer.Play();
-		buffer.SetLoop(false);
+		buffer.Play(false);
+		buffer.SetFrequency(100 + event_state.y * 800);
 		buffer.SetPosition(0.0);
 	}
 	
 	void Drum::Update()
 	{
-		//Update frequency, volume, and panning for current buffer
-		if (event_state.y != 0xFF)
-			buffer.SetFrequency(100 + event_state.y * 800);
+		//Update volume and panning for current buffer
 		if (event_state.volume != 0xFF)
 			buffer.SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
@@ -440,7 +467,7 @@ namespace Organya
 		for (event = i.event; event != nullptr; event = event->next)
 			event->length = stream.get();
 		for (event = i.event; event != nullptr; event = event->next)
-			event->volume = stream.get();// * 100 / 0x7F;
+			event->volume = stream.get();
 		for (event = i.event; event != nullptr; event = event->next)
 			event->pan = stream.get();
 		return false;
@@ -610,7 +637,7 @@ namespace Organya
 		i.pipi = false;
 	}
 	
-	void Instance::New()
+	bool Instance::New()
 	{
 		//Unload previous data
 		Unload();
@@ -636,6 +663,15 @@ namespace Organya
 		defp = drum_default;
 		for (auto &i : drum)
 			i.wave_no = *defp++;
+		
+		//Construct instrument buffers
+		for (auto &i : melody)
+			if (i.ConstructBuffers(*this))
+				return error.Push(i.GetError());
+		for (auto &i : drum)
+			if (i.ConstructBuffers(*this))
+				return error.Push(i.GetError());
+		return false;
 	}
 	
 	//Other internal functions
@@ -748,9 +784,9 @@ namespace Organya
 					i.SetPosition(x);
 				
 				for (auto &i : melody)
-					i.PlayState();
+					i.UpdateState();
 				for (auto &i : drum)
-					i.PlayState();
+					i.UpdateState();
 				
 				//Increment position in song
 				if (++x >= header.end_x)
