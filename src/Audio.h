@@ -29,7 +29,7 @@ namespace Audio
 		T userdata;
 		
 		int frequency;
-		uint16_t frames;
+		size_t frames;
 		
 		void (*callback)(const Config *config, uint8_t *stream);
 	};

@@ -4,7 +4,7 @@ Project: OrgMaker 3
 File: src/Organya.cpp
 Purpose: Define Organya classes
 
-Authors: Regan "cuckydev" Green
+Authors: Regan "cuckydev" Green, Daisuke "Pixel" Amaya
 */
 
 //Standard library
@@ -20,8 +20,8 @@ Authors: Regan "cuckydev" Green
 namespace Organya
 {
 	//Audio config
-	static const int audio_frequency = 48000;
-	static const uint16_t audio_frames = 0x200;
+	static const int audio_frequency = 44100;
+	static const uint16_t audio_frames = audio_frequency;
 	
 	//Instrument class
 	//Destructor
