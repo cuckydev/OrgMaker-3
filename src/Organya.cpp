@@ -239,16 +239,16 @@ namespace Organya
 	
 	//Drum class
 	static const std::string drum_name[] = {
-		"Bass",
+		"Bass01",
 		"Bass02",
-		"Snare",
+		"Snare01",
 		"Snare02",
-		"Tom",
+		"Tom01",
 		
-		"HiClose",
-		"HiOpen",
-		"Crash",
-		"Per",
+		"HiClose01",
+		"HiOpen01",
+		"Crash01",
+		"Per01",
 		"Per02",
 		
 		"Bass03",
@@ -304,8 +304,8 @@ namespace Organya
 			return error.Push("Failed to open drum (" + drum_name[wave_no] + ") resource");
 		
 		//Get size of drum file
-		size_t size = drum_stream.tellg();
-		drum_stream.seekg(0, std::ifstream::beg);
+		size_t size = (size_t)drum_stream.tellg() - 0x3A;
+		drum_stream.seekg(0x3A, std::ifstream::beg);
 		
 		//Read contents of drum file and use it for the sound buffer
 		float *data = new float[size];
@@ -562,6 +562,15 @@ namespace Organya
 				i.StopBuffers();
 		}
 		return false;
+	}
+	
+	uint32_t Instance::GetPosition()
+	{
+		//Lock audio while getting position
+		audio.Lock();
+		uint32_t _x = x;
+		audio.Unlock();
+		return _x;
 	}
 	
 	//Audio

@@ -190,6 +190,9 @@ namespace Organya
 			bool Play();
 			bool Stop();
 			
+			bool IsPlaying() const { return playing; };
+			uint32_t GetPosition();
+			
 			//Internal Organya interface
 			const ContentProvider *GetContentProvider() const
 			{ return content_provider; }
