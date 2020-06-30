@@ -191,6 +191,9 @@ namespace Organya
 			bool Stop();
 			
 			//Internal Organya interface
+			const ContentProvider *GetContentProvider() const
+			{ return content_provider; }
+			
 			const float *GetWave(uint8_t wave_no) const
 			{
 				if (wave_no >= 100)

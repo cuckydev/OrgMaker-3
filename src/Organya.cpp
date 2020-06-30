@@ -293,7 +293,28 @@ namespace Organya
 	
 	bool Drum::ConstructBuffers(const Instance &organya)
 	{
+		//Make sure content provider is available
+		const ContentProvider *content_provider;
+		if ((content_provider = organya.GetContentProvider()) == nullptr)
+			return error.Push("No content provider was given");
 		
+		//Open drum file
+		std::ifstream drum_stream = content_provider->OpenIn("Data/Resources/" + drum_name[wave_no], std::ifstream::ate | std::ifstream::binary);
+		if (!drum_stream.is_open())
+			return error.Push("Failed to open drum (" + drum_name[wave_no] + ") resource");
+		
+		//Get size of drum file
+		size_t size = drum_stream.tellg();
+		drum_stream.seekg(0, std::ifstream::beg);
+		
+		//Read contents of drum file and use it for the sound buffer
+		float *data = new float[size];
+		float *datap = data;
+		for (size_t i = 0; i < size; i++)
+			*datap++ = (float)(int8_t)((uint8_t)drum_stream.get() - 0x80) / 128.0f;
+		if (buffer.SetData(data, size, 22050))
+			return error.Push("Failed to set buffer data");
+		delete[] data;
 		return false;
 	}
 	
