@@ -126,8 +126,8 @@ namespace Audio
 	
 	void Buffer::SetPan(int32_t pan)
 	{
-		pan_l = ConvertVolume(pan);
-		pan_r = ConvertVolume(-pan);
+		pan_l = ConvertVolume(-pan);
+		pan_r = ConvertVolume(pan);
 		volume_l = volume * pan_l;
 		volume_r = volume * pan_r;
 	}

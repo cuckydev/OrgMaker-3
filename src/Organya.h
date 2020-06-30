@@ -25,9 +25,6 @@ namespace Organya
 {
 	class Instance; //prototype
 	
-	//Organya constants
-	const std::string default_path = "NewData.org";
-	
 	//Organya types
 	enum Version
 	{
@@ -153,7 +150,7 @@ namespace Organya
 			Error error;
 			
 			//Path to save song to
-			std::string path = default_path;
+			std::string path;
 			
 			//Content provider
 			const ContentProvider *content_provider = nullptr;
@@ -191,6 +188,8 @@ namespace Organya
 			bool Save(std::string _path);
 			bool Save();
 			
+			void New();
+			
 			//Organya interface
 			bool SetPosition(uint32_t x);
 			bool Play();
@@ -219,12 +218,18 @@ namespace Organya
 			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
 			bool InitializeAudio();
 			
-			//Internal reading functions
+			//Internal load, read, and new functions
 			bool ReadInstrument(std::istream &stream, Instrument &i, uint16_t &note_num);
 			bool ReadEvents(std::istream &stream, Instrument &i, uint16_t note_num);
 			
 			bool WriteInstrument(std::ostream &stream, Instrument &i);
 			bool WriteEvents(std::ostream &stream, Instrument &i);
+			
+			void ResetInstrument(Instrument &i);
+			
+			//Other internal functions
+			void UnloadInstrument(Instrument &i);
+			void Unload();
 			
 			//Read string of specified length from file
 			template<unsigned length> std::string ReadString(std::istream &stream)

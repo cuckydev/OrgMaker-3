@@ -21,6 +21,66 @@ namespace Organya
 	static const int audio_frequency = 44100;
 	static const uint16_t audio_frames = 0x200;
 	
+	//Organya constants
+	const std::string default_path = "NewData.org";
+	
+	static const std::string drum_name[] = {
+		"Bass01",
+		"Bass02",
+		"Snare01",
+		"Snare02",
+		"Tom01",
+		
+		"HiClose01",
+		"HiOpen01",
+		"Crash01",
+		"Per01",
+		"Per02",
+		
+		"Bass03",
+		"Tom02",
+		"Bass04",
+		"Bass05",
+		"Snare03",
+		
+		"Snare04",
+		"HiClose02",
+		"HiOpen02",
+		"HiClose03",
+		"HiOpen03",
+		
+		"Crash02",
+		"RevSym",
+		"Ride",
+		"Tom03",
+		"Tom04",
+		
+		"OrcDrm",
+		"Bell",
+		"Cat",
+		"Bass06",
+		"Bass07",
+		
+		"Snare05",
+		"Snare06",
+		"Snare07",
+		"Tom05",
+		"HiOpen04",
+		
+		"HiClose04",
+		"Clap",
+		"Pesi",
+		"Quick",
+		"Bass08",
+		
+		"Snare08",
+		"HiClose05",
+	};
+	
+	//Instrument defaults
+	uint8_t melody_default[8] = {0, 11, 22, 33, 44, 55, 66, 77};
+	uint8_t drum_default[8] = {0, 2, 5, 6, 4, 8, 0, 0};
+	
 	//Instrument class
 	//Destructor
 	Instrument::~Instrument()
@@ -226,7 +286,7 @@ namespace Organya
 		if (event_state.volume != 0xFF)
 			current_buffer->SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
-			current_buffer->SetPan(pan_tbl[event_state.pan]);
+			current_buffer->SetPan((pan_tbl[event_state.pan] - 0x100) * 10);
 	}
 	
 	void Melody::Stop()
@@ -238,59 +298,6 @@ namespace Organya
 	}
 	
 	//Drum class
-	static const std::string drum_name[] = {
-		"Bass01",
-		"Bass02",
-		"Snare01",
-		"Snare02",
-		"Tom01",
-		
-		"HiClose01",
-		"HiOpen01",
-		"Crash01",
-		"Per01",
-		"Per02",
-		
-		"Bass03",
-		"Tom02",
-		"Bass04",
-		"Bass05",
-		"Snare03",
-		
-		"Snare04",
-		"HiClose02",
-		"HiOpen02",
-		"HiClose03",
-		"HiOpen03",
-		
-		"Crash02",
-		"RevSym",
-		"Ride",
-		"Tom03",
-		"Tom04",
-		
-		"OrcDrm",
-		"Bell",
-		"Cat",
-		"Bass06",
-		"Bass07",
-		
-		"Snare05",
-		"Snare06",
-		"Snare07",
-		"Tom05",
-		"HiOpen04",
-		
-		"HiClose04",
-		"Clap",
-		"Pesi",
-		"Quick",
-		"Bass08",
-		
-		"Snare08",
-		"HiClose05",
-	};
-	
 	bool Drum::ConstructBuffers(const Instance &organya)
 	{
 		//Make sure content provider is available
@@ -344,7 +351,7 @@ namespace Organya
 		if (event_state.volume != 0xFF)
 			buffer.SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
-			buffer.SetPan(pan_tbl[event_state.pan]);
+			buffer.SetPan((pan_tbl[event_state.pan] - 0x100) * 10);
 	}
 	
 	void Drum::Stop()
@@ -433,7 +440,7 @@ namespace Organya
 		for (event = i.event; event != nullptr; event = event->next)
 			event->length = stream.get();
 		for (event = i.event; event != nullptr; event = event->next)
-			event->volume = stream.get();
+			event->volume = stream.get();// * 100 / 0x7F;
 		for (event = i.event; event != nullptr; event = event->next)
 			event->pan = stream.get();
 		return false;
@@ -444,6 +451,9 @@ namespace Organya
 		//Fail if content provider wasn't given
 		if (content_provider == nullptr)
 			return error.Push("No content provider was given");
+		
+		//Unload previous data
+		Unload();
 		
 		//Read magic and version
 		std::string magic = ReadString<6>(stream);
@@ -590,6 +600,65 @@ namespace Organya
 	bool Instance::Save()
 	{
 		return Save(path);
+	}
+	
+	//New
+	void Instance::ResetInstrument(Instrument &i)
+	{
+		i.freq = 1000;
+		i.wave_no = 0;
+		i.pipi = false;
+	}
+	
+	void Instance::New()
+	{
+		//Unload previous data
+		Unload();
+		
+		//Reset header
+		header.version = OrgV02;
+		header.wait = 128;
+		header.line = 4;
+		header.dot = 4;
+		header.repeat_x = 0;
+		header.end_x = header.line * header.dot * 255;
+		
+		//Reset instrument info
+		for (auto &i : melody)
+			ResetInstrument(i);
+		for (auto &i : drum)
+			ResetInstrument(i);
+		
+		//Set instrument default waves
+		uint8_t *defp = melody_default;
+		for (auto &i : melody)
+			i.wave_no = *defp++;
+		defp = drum_default;
+		for (auto &i : drum)
+			i.wave_no = *defp++;
+	}
+	
+	//Other internal functions
+	void Instance::UnloadInstrument(Instrument &i)
+	{
+		//Delete linked list
+		while (i.event != nullptr)
+		{
+			i.event = i.event->next;
+			if (i.event != nullptr)
+				delete i.event->prev;
+			else
+				break;
+		}
+	}
+	
+	void Instance::Unload()
+	{
+		//Unload instruments
+		for (auto &i : melody)
+			UnloadInstrument(i);
+		for (auto &i : drum)
+			UnloadInstrument(i);
 	}
 	
 	//Organya interface

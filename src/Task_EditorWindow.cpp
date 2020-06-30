@@ -23,14 +23,20 @@ Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider, i
 	//Load or start new org
 	if (argc > 1)
 	{
-		//Load, save, and play given org
+		//Load given org
 		if (organya.Load(argv[1]))
 		{
 			error.Push(organya.GetError());
 			return;
 		}
-		organya.Play();
 	}
+	else
+	{
+		organya.New();
+	}
+	
+	//TEMP: play org
+	organya.Play();
 	
 	//Create window
 	if ((window = new Window(	"OrgMaker 3 - Untitled",
