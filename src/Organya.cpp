@@ -11,9 +11,6 @@ Authors: Regan "cuckydev" Green, Daisuke "Pixel" Amaya
 #include <algorithm>
 #include <iostream>
 
-//Resources
-#include "rWave.h"
-
 //Declaration
 #include "Organya.h"
 
@@ -149,7 +146,7 @@ namespace Organya
 		{8,   128, 32}, // 7 Oct
 	};
 	
-	bool Melody::ConstructBuffers()
+	bool Melody::ConstructBuffers(const Instance &organya)
 	{
 		for (size_t i = 0; i < 8; i++)
 		{
@@ -159,23 +156,26 @@ namespace Organya
 			//Allocate buffer data
 			float *data = new float[data_size];
 			if (data == nullptr)
-				return true;
+				return error.Push("Failed to allocate buffer data");
 			float *datap = data;
 			
 			//Get wave position
-			const int8_t *wave = (const int8_t*)rWave + 0x100 * wave_no;
+			const float *wave;
+			if ((wave = organya.GetWave(wave_no)) == nullptr)
+				return error.Push("Failed to get waveform");
 			
 			//Fill buffer data
 			size_t wave_tp = 0;
 			for (size_t j = 0; j < data_size; j++)
 			{
-				*datap++ = (float)wave[wave_tp] / 128.0f;
+				*datap++ = wave[wave_tp];
 				wave_tp = (wave_tp + (0x100 / wave_size)) & 0xFF;
 			}
 			
 			//Create buffers
 			for (size_t v = 0; v < 2; v++)
-				buffer[i][v].SetData(data, data_size, 22050);
+				if (buffer[i][v].SetData(data, data_size, 22050))
+					return error.Push("Failed to set buffer data");
 			delete[] data;
 		}
 		return false;
@@ -239,16 +239,16 @@ namespace Organya
 	
 	//Drum class
 	static const std::string drum_name[] = {
-		"Bass01",
+		"Bass",
 		"Bass02",
-		"Snare01",
+		"Snare",
 		"Snare02",
-		"Tom01",
+		"Tom",
 		
 		"HiClose",
 		"HiOpen",
 		"Crash",
-		"Per01",
+		"Per",
 		"Per02",
 		
 		"Bass03",
@@ -264,12 +264,12 @@ namespace Organya
 		"HiOpen03",
 		
 		"Crash02",
-		"RevSym01",
-		"Ride01",
+		"RevSym",
+		"Ride",
 		"Tom03",
 		"Tom04",
 		
-		"OrcDrm01",
+		"OrcDrm",
 		"Bell",
 		"Cat",
 		"Bass06",
@@ -282,27 +282,18 @@ namespace Organya
 		"HiOpen04",
 		
 		"HiClose04",
-		"Clap01",
-		"Pesi01",
-		"Quick01",
+		"Clap",
+		"Pesi",
+		"Quick",
 		"Bass08",
 		
 		"Snare08",
 		"HiClose05",
 	};
-	bool Drum::ConstructBuffers()
+	
+	bool Drum::ConstructBuffers(const Instance &organya)
 	{
-		std::string name = drum_name[wave_no];
-		std::transform(name.begin(), name.end(), name.begin(), [](unsigned char c){return std::toupper(c);});
-		std::ifstream stream("build/Data/Resources/" + name, std::ifstream::ate | std::ifstream::binary);
-		size_t size = stream.tellg();
-		stream.seekg(0, std::ifstream::beg);
-		float *data = new float[size];
-		float *datap = data;
-		for (size_t i = 0; i < size; i++)
-			*datap++ = (float)(int8_t)((uint8_t)stream.get() - 0x80) / 128.0f;
-		buffer.SetData(data, size, 22050);
-		delete[] data;
+		
 		return false;
 	}
 	
@@ -350,6 +341,24 @@ namespace Organya
 		return;
 	}
 	
+	//Data initialization
+	bool Instance::InitializeData(const ContentProvider *_content_provider)
+	{
+		//Use given content provider
+		if ((content_provider = _content_provider) == nullptr)
+			return error.Push("No content provider was given");
+		
+		//Open and read waveforms
+		std::ifstream wave_stream = content_provider->OpenIn("Data/Resources/Wave100", std::ifstream::binary);
+		if (!wave_stream.is_open())
+			return error.Push("Failed to open Wave100 resource");
+		
+		for (uint8_t i = 0; i < 100; i++)
+			for (uint16_t v = 0; v < 0x100; v++)
+				wave[i][v] = (float)(int8_t)wave_stream.get() / 128.0f;
+		return false;
+	}
+	
 	//Loading
 	struct VersionLUT
 	{
@@ -367,7 +376,8 @@ namespace Organya
 	{
 		//Read instrument data
 		i.freq = ReadLE16(stream);
-		i.wave_no = stream.get();
+		if ((i.wave_no = stream.get()) >= 100)
+			return error.Push("Invalid wave number (" + std::to_string(i.wave_no) + ")");
 		i.pipi = stream.get();
 		if (header.version == OrgV01)
 			i.pipi = false; //OrgV01 has no pipi, but the byte is still there
@@ -397,7 +407,8 @@ namespace Organya
 		for (event = i.event; event != nullptr; event = event->next)
 			event->x = ReadLE32(stream);
 		for (event = i.event; event != nullptr; event = event->next)
-			event->y = stream.get();
+			if ((event->y = stream.get()) >= 12 * 8 && event->y != 0xFF)
+				return error.Push("Invalid event Y (" + std::to_string(event->y) + ")");
 		for (event = i.event; event != nullptr; event = event->next)
 			event->length = stream.get();
 		for (event = i.event; event != nullptr; event = event->next)
@@ -409,6 +420,10 @@ namespace Organya
 	
 	bool Instance::Load(std::istream &stream)
 	{
+		//Fail if content provider wasn't given
+		if (content_provider == nullptr)
+			return error.Push("No content provider was given");
+		
 		//Read magic and version
 		std::string magic = ReadString<6>(stream);
 		for (auto &i : version_lut)
@@ -440,11 +455,11 @@ namespace Organya
 		
 		//Construct instrument buffers
 		for (auto &i : melody)
-			if (i.ConstructBuffers())
-				return true;
+			if (i.ConstructBuffers(*this))
+				return error.Push(i.GetError());
 		for (auto &i : drum)
-			if (i.ConstructBuffers())
-				return true;
+			if (i.ConstructBuffers(*this))
+				return error.Push(i.GetError());
 		
 		//Read event data
 		note_num_p = note_num;

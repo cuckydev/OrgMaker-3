@@ -15,6 +15,7 @@ Authors: Regan "cuckydev" Green
 #include <string>
 
 //OrgMaker classes
+#include "ContentProvider.h"
 #include "Task_EditorWindow.h"
 
 //Entry point
@@ -30,8 +31,11 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
+		//Initialize content provider
+		ContentProvider content_provider;
+		
 		//Create editor window task
-		Task *task = new Task_EditorWindow();
+		Task *task = new Task_EditorWindow(&content_provider);
 		if (task == nullptr || task->GetError())
 		{
 			//Task creation error
@@ -52,10 +56,12 @@ int main(int argc, char *argv[])
 			if (task->GetError())
 				error = (std::string)task->GetError();
 			
-			//Delete task and quit SDL
+			//Delete task
 			delete task;
-			SDL_Quit();
 		}
+		
+		//Quit SDL
+		SDL_Quit();
 	}
 	
 	//If an error occured, show it to the user and return -1, otherwise return 0

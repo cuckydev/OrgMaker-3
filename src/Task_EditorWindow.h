@@ -10,6 +10,7 @@ Authors: Regan "cuckydev" Green
 */
 
 //OrgMaker classes
+#include "ContentProvider.h"
 #include "Window.h"
 #include "Organya.h"
 #include "Placement.h"
@@ -23,6 +24,9 @@ class Task_EditorWindow : public Task
 	private:
 		//Window
 		Window *window = nullptr;
+		
+		//Content provider
+		const ContentProvider *content_provider = nullptr;
 		
 		//Organya instance
 		Organya::Instance organya;
@@ -44,7 +48,7 @@ class Task_EditorWindow : public Task
 		
 	public:
 		//Constructor and destructor
-		Task_EditorWindow();
+		Task_EditorWindow(const ContentProvider *_content_provider);
 		~Task_EditorWindow();
 		
 		//Task interface

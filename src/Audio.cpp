@@ -22,7 +22,7 @@ namespace Audio
 	}
 	
 	//Audio buffer interface
-	void Buffer::SetData(float *_data, size_t _size, int _frequency)
+	bool Buffer::SetData(float *_data, size_t _size, int _frequency)
 	{
 		//Delete previous data
 		if (data != nullptr)
@@ -30,7 +30,8 @@ namespace Audio
 		
 		//Copy data
 		size = _size;
-		data = new float[size + 1];
+		if ((data = new float[size + 1]) == nullptr)
+			return true;
 		for (size_t i = 0; i < size; i++)
 			data[i] = _data[i];
 		data[size] = 0.0f;
@@ -46,6 +47,7 @@ namespace Audio
 		volume_r = 1.0f;
 		pan_l = 1.0f;
 		pan_r = 1.0f;
+		return false;
 	}
 	
 	void Buffer::Mix(float *stream, int stream_frequency, size_t stream_frames)

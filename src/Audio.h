@@ -16,7 +16,7 @@ Authors: Regan "cuckydev" Green
 //Library
 #include "SDL_audio.h"
 
-//OrgMaker3 classes
+//OrgMaker classes
 #include "Error.h"
 
 //Audio namespace
@@ -172,7 +172,7 @@ namespace Audio
 			~Buffer();
 			
 			//Buffer interface
-			void SetData(float *_data, size_t _size, int _frequency);
+			bool SetData(float *_data, size_t _size, int _frequency);
 			
 			void Mix(float *stream, int stream_frequency, size_t stream_frames);
 			

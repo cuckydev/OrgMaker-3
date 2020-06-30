@@ -11,7 +11,7 @@ Authors: Regan "cuckydev" Green
 #include "Task_EditorWindow.h"
 
 //Constructor and destructor
-Task_EditorWindow::Task_EditorWindow()
+Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider) : content_provider(_content_provider)
 {
 	//Create window
 	if ((window = new Window(	"OrgMaker 3 - Untitled",
@@ -20,6 +20,13 @@ Task_EditorWindow::Task_EditorWindow()
 		window->GetError())
 	{
 		error.Push(window->GetError());
+		return;
+	}
+	
+	//Initialize Organya data
+	if (organya.InitializeData(content_provider))
+	{
+		error.Push(organya.GetError());
 		return;
 	}
 	

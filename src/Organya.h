@@ -17,11 +17,14 @@ Authors: Regan "cuckydev" Green
 
 //OrgMaker classes
 #include "Error.h"
+#include "ContentProvider.h"
 #include "Audio.h"
 
 //Organya namespace
 namespace Organya
 {
+	class Instance; //prototype
+	
 	//Organya types
 	enum Version
 	{
@@ -55,6 +58,10 @@ namespace Organya
 
 	class Instrument
 	{
+		protected:
+			//Error
+			Error error;
+			
 		public:
 			//Instrument info
 			uint16_t freq;		//Frequency offset (1000 is 0hz offset)
@@ -77,13 +84,16 @@ namespace Organya
 			~Instrument();
 			
 			//Instrument interface
-			virtual bool ConstructBuffers() = 0;
+			virtual bool ConstructBuffers(const Instance &organya) = 0;
 			virtual void StopBuffers() = 0;
 			virtual void Mix(float *stream, int stream_frequency, size_t stream_frames) = 0;
 			
 			void SetPosition(uint32_t _x);
 			void GetState();
 			void PlayState();
+			
+			//Get error
+			const Error &GetError() const { return error; }
 			
 		private:
 			//Internal instrument interface
@@ -102,7 +112,7 @@ namespace Organya
 			
 		public:
 			//Instrument interface
-			bool ConstructBuffers();
+			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
 			void Mix(float *stream, int stream_frequency, size_t stream_frames);
 			
@@ -121,7 +131,7 @@ namespace Organya
 			
 		public:
 			//Instrument interface
-			bool ConstructBuffers();
+			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
 			void Mix(float *stream, int stream_frequency, size_t stream_frames);
 			
@@ -141,6 +151,12 @@ namespace Organya
 			
 			//Path to save song to
 			std::string path;
+			
+			//Content provider
+			const ContentProvider *content_provider = nullptr;
+			
+			//Waveforms
+			float wave[100][0x100];
 			
 			//Audio instance
 			Audio::Instance<Instance*> audio;
@@ -162,6 +178,9 @@ namespace Organya
 			Instance(std::string _path) { Load(_path); InitializeAudio(); }
 			~Instance();
 			
+			//Data initialization
+			bool InitializeData(const ContentProvider *_content_provider);
+			
 			//Loading
 			bool Load(std::istream &stream);
 			bool Load(std::string _path);
@@ -170,6 +189,14 @@ namespace Organya
 			bool SetPosition(uint32_t x);
 			bool Play();
 			bool Stop();
+			
+			//Internal Organya interface
+			const float *GetWave(uint8_t wave_no) const
+			{
+				if (wave_no >= 100)
+					return nullptr;
+				return wave[wave_no];
+			}
 			
 			//Get error
 			const Error &GetError() const { return error; }
