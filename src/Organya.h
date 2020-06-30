@@ -25,6 +25,9 @@ namespace Organya
 {
 	class Instance; //prototype
 	
+	//Organya constants
+	const std::string default_path = "NewData.org";
+	
 	//Organya types
 	enum Version
 	{
@@ -150,7 +153,7 @@ namespace Organya
 			Error error;
 			
 			//Path to save song to
-			std::string path;
+			std::string path = default_path;
 			
 			//Content provider
 			const ContentProvider *content_provider = nullptr;
@@ -181,9 +184,12 @@ namespace Organya
 			//Data initialization
 			bool InitializeData(const ContentProvider *_content_provider);
 			
-			//Loading
+			//Loading, saving, and creation
 			bool Load(std::istream &stream);
 			bool Load(std::string _path);
+			
+			bool Save(std::string _path);
+			bool Save();
 			
 			//Organya interface
 			bool SetPosition(uint32_t x);
@@ -217,6 +223,9 @@ namespace Organya
 			bool ReadInstrument(std::istream &stream, Instrument &i, uint16_t &note_num);
 			bool ReadEvents(std::istream &stream, Instrument &i, uint16_t note_num);
 			
+			bool WriteInstrument(std::ostream &stream, Instrument &i);
+			bool WriteEvents(std::ostream &stream, Instrument &i);
+			
 			//Read string of specified length from file
 			template<unsigned length> std::string ReadString(std::istream &stream)
 			{
@@ -230,5 +239,11 @@ namespace Organya
 			{ return ((uint16_t)stream.get()) | ((uint16_t)stream.get() << 8); }
 			uint32_t ReadLE32(std::istream &stream)
 			{ return ((uint32_t)stream.get()) | ((uint32_t)stream.get() << 8) | ((uint32_t)stream.get() << 16) | ((uint32_t)stream.get() << 24); }
+			
+			//Write specific sizes from stream
+			void WriteLE16(std::ostream &stream, uint16_t x)
+			{ stream.put((uint8_t)(x >> 0)); stream.put((uint8_t)(x >> 8)); }
+			void WriteLE32(std::ostream &stream, uint32_t x)
+			{ stream.put((uint8_t)(x >> 0)); stream.put((uint8_t)(x >> 8)); stream.put((uint8_t)(x >> 16)); stream.put((uint8_t)(x >> 24)); }
 	};
 }

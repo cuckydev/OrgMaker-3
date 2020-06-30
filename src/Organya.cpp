@@ -507,6 +507,91 @@ namespace Organya
 			return error.Push("Failed to open " + path);
 	}
 	
+	//Saving
+	bool Instance::WriteInstrument(std::ostream &stream, Instrument &i)
+	{
+		//Write instrument data
+		WriteLE16(stream, i.freq);
+		if (i.wave_no >= 100)
+			return error.Push("Invalid wave number (" + std::to_string(i.wave_no) + ")");
+		stream.put(i.wave_no);
+		stream.put(i.pipi);
+		
+		//Calculate note_num
+		uint16_t note_num = 0;
+		for (Event *event = i.event; event != nullptr; event = event->next)
+			note_num++;
+		WriteLE16(stream, note_num);
+		return false;
+	}
+	
+	bool Instance::WriteEvents(std::ostream &stream, Instrument &i)
+	{
+		//Read data into notes
+		Event *event;
+		for (event = i.event; event != nullptr; event = event->next)
+			WriteLE32(stream, event->x);
+		for (event = i.event; event != nullptr; event = event->next)
+		{
+			if (event->y >= 12 * 8 && event->y != 0xFF)
+				return error.Push("Invalid event Y (" + std::to_string(event->y) + ")");
+			stream.put(event->y);
+		}
+		for (event = i.event; event != nullptr; event = event->next)
+			stream.put(event->length);
+		for (event = i.event; event != nullptr; event = event->next)
+			stream.put(event->volume);
+		for (event = i.event; event != nullptr; event = event->next)
+			stream.put(event->pan);
+		return false;
+	}
+	
+	bool Instance::Save(std::string _path)
+	{
+		//Open stream
+		std::ofstream stream(_path + ".tmp", std::ofstream::binary);
+		if (!stream.is_open())
+			return error.Push("Failed to save to " + _path);
+		
+		//Save header
+		for (auto &i : version_lut)
+		{
+			if (i.version == header.version)
+			{
+				stream << i.name;
+				break;
+			}
+		}
+		
+		WriteLE16(stream, header.wait);
+		stream.put(header.line);
+		stream.put(header.dot);
+		WriteLE32(stream, header.repeat_x);
+		WriteLE32(stream, header.end_x);
+		
+		//Write instrument information
+		for (auto &i : melody)
+			if (WriteInstrument(stream, i))
+				return true;
+		for (auto &i : drum)
+			if (WriteInstrument(stream, i))
+				return true;
+		
+		//Write events
+		for (auto &i : melody)
+			if (WriteEvents(stream, i))
+				return true;
+		for (auto &i : drum)
+			if (WriteEvents(stream, i))
+				return true;
+		return false;
+	}
+	
+	bool Instance::Save()
+	{
+		return Save(path);
+	}
+	
 	//Organya interface
 	bool Instance::SetPosition(uint32_t _x)
 	{

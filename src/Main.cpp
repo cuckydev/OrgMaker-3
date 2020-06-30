@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
 		ContentProvider content_provider;
 		
 		//Create editor window task
-		Task *task = new Task_EditorWindow(&content_provider);
+		Task *task = new Task_EditorWindow(&content_provider, argc, argv);
 		if (task == nullptr || task->GetError())
 		{
 			//Task creation error

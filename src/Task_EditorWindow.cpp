@@ -11,8 +11,27 @@ Authors: Regan "cuckydev" Green
 #include "Task_EditorWindow.h"
 
 //Constructor and destructor
-Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider) : content_provider(_content_provider)
+Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider, int argc, char *argv[]) : content_provider(_content_provider)
 {
+	//Organya initialization
+	if (organya.GetError() || organya.InitializeData(content_provider))
+	{
+		error.Push(organya.GetError());
+		return;
+	}
+	
+	//Load or start new org
+	if (argc > 1)
+	{
+		//Load, save, and play given org
+		if (organya.Load(argv[1]) || organya.Save())
+		{
+			error.Push(organya.GetError());
+			return;
+		}
+		organya.Play();
+	}
+	
 	//Create window
 	if ((window = new Window(	"OrgMaker 3 - Untitled",
 								{SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 854, 480},
@@ -22,23 +41,6 @@ Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider) :
 		error.Push(window->GetError());
 		return;
 	}
-	
-	//Initialize Organya data
-	if (organya.InitializeData(content_provider))
-	{
-		error.Push(organya.GetError());
-		return;
-	}
-	
-	//Load test org
-	if (organya.GetError() || organya.Load("test.org"))
-	{
-		error.Push(organya.GetError());
-		return;
-	}
-	
-	//Play org
-	organya.Play();
 }
 
 Task_EditorWindow::~Task_EditorWindow()

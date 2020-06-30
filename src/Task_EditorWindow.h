@@ -48,7 +48,7 @@ class Task_EditorWindow : public Task
 		
 	public:
 		//Constructor and destructor
-		Task_EditorWindow(const ContentProvider *_content_provider);
+		Task_EditorWindow(const ContentProvider *_content_provider, int argc, char *argv[]);
 		~Task_EditorWindow();
 		
 		//Task interface
