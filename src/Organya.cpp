@@ -758,6 +758,52 @@ namespace Organya
 		return _x;
 	}
 	
+	//Mixing interface
+	void Instance::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
+	{
+		//Update and mix Organya
+		size_t step_frames = header.wait * stream_frequency / 1000;
+		size_t frames_done = 0;
+		
+		while (frames_done < stream_frames)
+		{
+			if (step_frames_counter == 0)
+			{
+				//Reset step frames counter
+				step_frames_counter = step_frames;
+				
+				//Update instruments
+				for (auto &i : melody)
+					i.SetPosition(x);
+				for (auto &i : drum)
+					i.SetPosition(x);
+				
+				for (auto &i : melody)
+					i.UpdateState();
+				for (auto &i : drum)
+					i.UpdateState();
+				
+				//Increment position in song
+				if (++x >= header.end_x)
+					x = header.repeat_x;
+			}
+			
+			//Get frames to do
+			size_t frames_to_do = stream_frames - frames_done;
+			if (frames_to_do > step_frames_counter)
+				frames_to_do = step_frames_counter;
+			
+			//Mix instruments
+			for (auto &i : melody)
+				i.Mix(stream, stream_frequency, frames_to_do);
+			for (auto &i : drum)
+				i.Mix(stream, stream_frequency, frames_to_do);
+			stream += frames_to_do * 2;
+			frames_done += frames_to_do;
+			step_frames_counter -= frames_to_do;
+		}
+	}
+	
 	int16_t *Instance::MixToBuffer(size_t &frames, unsigned int frequency, unsigned int repeats)
 	{
 		//Determine length
@@ -822,51 +868,6 @@ namespace Organya
 	}
 	
 	//Audio
-	void Instance::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
-	{
-		//Update and mix Organya
-		size_t step_frames = header.wait * stream_frequency / 1000;
-		size_t frames_done = 0;
-		
-		while (frames_done < stream_frames)
-		{
-			if (step_frames_counter == 0)
-			{
-				//Reset step frames counter
-				step_frames_counter = step_frames;
-				
-				//Update instruments
-				for (auto &i : melody)
-					i.SetPosition(x);
-				for (auto &i : drum)
-					i.SetPosition(x);
-				
-				for (auto &i : melody)
-					i.UpdateState();
-				for (auto &i : drum)
-					i.UpdateState();
-				
-				//Increment position in song
-				if (++x >= header.end_x)
-					x = header.repeat_x;
-			}
-			
-			//Get frames to do
-			size_t frames_to_do = stream_frames - frames_done;
-			if (frames_to_do > step_frames_counter)
-				frames_to_do = step_frames_counter;
-			
-			//Mix instruments
-			for (auto &i : melody)
-				i.Mix(stream, stream_frequency, frames_to_do);
-			for (auto &i : drum)
-				i.Mix(stream, stream_frequency, frames_to_do);
-			stream += frames_to_do * 2;
-			frames_done += frames_to_do;
-			step_frames_counter -= frames_to_do;
-		}
-	}
-	
 	void MiddleAudioCallback(const Audio::Config<Instance*> *config, int32_t *stream)
 	{
 		//Clear and mix stream

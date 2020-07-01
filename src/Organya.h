@@ -198,6 +198,8 @@ namespace Organya
 			bool IsPlaying() const { return playing; };
 			uint32_t GetPosition();
 			
+			//Mixing interface
+			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			int16_t *MixToBuffer(size_t &frames, unsigned int frequency, unsigned int repeats);
 			bool MixToStream(std::ostream &stream, unsigned int frequency, unsigned int repeats);
 			
@@ -217,7 +219,6 @@ namespace Organya
 			
 		private:
 			//Audio
-			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, int32_t *stream);
 			bool InitializeAudio();
 			
