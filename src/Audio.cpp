@@ -50,7 +50,7 @@ namespace Audio
 		return false;
 	}
 	
-	void Buffer::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
+	ATTRIBUTE_HOT void Buffer::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		//Don't mix if not playing or hasn't been setup yet
 		if (play == false || data == nullptr)

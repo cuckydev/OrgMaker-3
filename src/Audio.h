@@ -17,6 +17,7 @@ Authors: Regan "cuckydev" Green
 #include "SDL_audio.h"
 
 //OrgMaker classes
+#include "Attributes.h"
 #include "Error.h"
 #include "FixedPoint.h"
 
@@ -37,13 +38,18 @@ namespace Audio
 	
 	//Middle audio callback
 	template <typename T>
-	void MiddleCallback(void *userdata, uint8_t *stream, int len)
+	ATTRIBUTE_HOT void MiddleCallback(void *userdata, uint8_t *stream, int len)
 	{
 		Config<T> *config = (Config<T>*)userdata;
+		
+		//Allocate a 32-bit buffer so that we can do clamping after mixing
 		int32_t *buffer;
 		if ((buffer = new int32_t[config->frames * 2]) != nullptr)
 		{
+			//Mix into 32-bit buffer
 			config->callback(config, buffer);
+			
+			//Clamp 32-bit buffer into our stream
 			int16_t *streamp = (int16_t*)stream;
 			int32_t *bufferp = buffer;
 			for (size_t i = 0; i < config->frames * 2; i++)
@@ -56,6 +62,8 @@ namespace Audio
 					*streamp++ = *bufferp;
 				bufferp++;
 			}
+			
+			//Delete buffer
 			delete[] buffer;
 		}
 	};
@@ -192,7 +200,7 @@ namespace Audio
 			//Buffer interface
 			bool SetData(int8_t *_data, size_t _size, unsigned int _frequency);
 			
-			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
+			ATTRIBUTE_HOT void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 			void Play(bool _loop);
 			void Stop();
