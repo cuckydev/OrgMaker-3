@@ -198,6 +198,9 @@ namespace Organya
 			bool IsPlaying() const { return playing; };
 			uint32_t GetPosition();
 			
+			int16_t *MixToBuffer(size_t &frames, unsigned int frequency, unsigned int repeats);
+			bool MixToStream(std::ostream &stream, unsigned int frequency, unsigned int repeats);
+			
 			//Internal Organya interface
 			const ContentProvider *GetContentProvider() const
 			{ return content_provider; }

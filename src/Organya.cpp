@@ -758,12 +758,75 @@ namespace Organya
 		return _x;
 	}
 	
+	int16_t *Instance::MixToBuffer(size_t &frames, unsigned int frequency, unsigned int repeats)
+	{
+		//Determine length
+		size_t step_frames = header.wait * frequency / 1000;
+		frames = (step_frames * header.end_x) + (step_frames * (header.end_x - header.repeat_x)) * repeats;
+		
+		//Allocate 32-bit buffer to mix into before clamping
+		int32_t *buffer;
+		if ((buffer = new int32_t[frames * 2]) == nullptr)
+		{
+			error.Push("Failed to allocate mix buffer");
+			return nullptr;
+		}
+		
+		//Prepare for playback
+		if (Stop())
+			return nullptr;
+		uint32_t _x = x; //Remember previous X
+		SetPosition(0);
+		
+		//Mix to mix buffer
+		Mix(buffer, frequency, frames);
+		
+		//Reset state
+		SetPosition(_x); //Go back to previous X
+		
+		//Allocate final buffer
+		int16_t *fbuffer = new int16_t[frames * 2];
+		int16_t *fbufferp = fbuffer;
+		
+		//Clamp and write buffer to final buffer
+		int32_t *bufferp = buffer;
+		for (size_t i = 0; i < frames * 2; i++)
+		{
+			if (*bufferp < -0x7FFF)
+				*fbufferp++ = -0x7FFF;
+			else if (*bufferp > 0x7FFF)
+				*fbufferp++ = 0x7FFF;
+			else
+				*fbufferp++ = *bufferp;
+			bufferp++;
+		}
+		
+		//Delete mix buffer
+		delete[] buffer;
+		return fbuffer;
+	}
+	
+	bool Instance::MixToStream(std::ostream &stream, unsigned int frequency, unsigned int repeats)
+	{
+		//Get mixed buffer
+		size_t frames;
+		int16_t *buffer;
+		if ((buffer = MixToBuffer(frames, frequency, repeats)) == nullptr)
+			return true;
+		
+		//Write mixed buffer to stream
+		int16_t *bufferp = buffer;
+		for (size_t i = 0; i < frames * 2; i++)
+			WriteLE16(stream, *bufferp++);
+		delete[] buffer;
+	}
+	
 	//Audio
 	void Instance::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		//Update and mix Organya
-		int step_frames = header.wait * stream_frequency / 1000;
-		int frames_done = 0;
+		size_t step_frames = header.wait * stream_frequency / 1000;
+		size_t frames_done = 0;
 		
 		while (frames_done < stream_frames)
 		{
@@ -789,7 +852,7 @@ namespace Organya
 			}
 			
 			//Get frames to do
-			int frames_to_do = stream_frames - frames_done;
+			size_t frames_to_do = stream_frames - frames_done;
 			if (frames_to_do > step_frames_counter)
 				frames_to_do = step_frames_counter;
 			

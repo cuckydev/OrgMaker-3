@@ -37,7 +37,11 @@ Task_EditorWindow::Task_EditorWindow(const ContentProvider *_content_provider, i
 	}
 	
 	//TEMP: play org
-	organya.Play();
+	if (organya.Play())
+	{
+		error.Push(organya.GetError());
+		return;
+	}
 	
 	//Create window
 	if ((window = new Window(	"OrgMaker 3 - Untitled",
