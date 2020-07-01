@@ -86,7 +86,7 @@ namespace Organya
 			//Instrument interface
 			virtual bool ConstructBuffers(const Instance &organya) = 0;
 			virtual void StopBuffers() = 0;
-			virtual void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames) = 0;
+			virtual void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames) = 0;
 			
 			void SetPosition(uint32_t _x);
 			void GetState();
@@ -114,7 +114,7 @@ namespace Organya
 			//Instrument interface
 			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
-			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
+			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 		private:
 			//Internal instrument interface
@@ -133,7 +133,7 @@ namespace Organya
 			//Instrument interface
 			bool ConstructBuffers(const Instance &organya);
 			void StopBuffers();
-			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
+			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 		protected:
 			//Internal instrument interface
@@ -156,7 +156,7 @@ namespace Organya
 			const ContentProvider *content_provider = nullptr;
 			
 			//Waveforms
-			float wave[100][0x100];
+			int8_t wave[100][0x100];
 			
 			//Audio instance
 			Audio::Instance<Instance*> audio;
@@ -202,7 +202,7 @@ namespace Organya
 			const ContentProvider *GetContentProvider() const
 			{ return content_provider; }
 			
-			const float *GetWave(uint8_t wave_no) const
+			const int8_t *GetWave(uint8_t wave_no) const
 			{
 				if (wave_no >= 100)
 					return nullptr;
@@ -214,8 +214,8 @@ namespace Organya
 			
 		private:
 			//Audio
-			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
-			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream);
+			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
+			friend void MiddleAudioCallback(const Audio::Config<Instance*> *config, int32_t *stream);
 			bool InitializeAudio();
 			
 			//Internal load, read, and new functions

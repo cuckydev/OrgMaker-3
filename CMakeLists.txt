@@ -11,6 +11,7 @@ add_executable(OrgMaker3 WIN32
 	"src/Main.cpp"
 	"src/Error.cpp"
 	"src/Error.h"
+	"src/FixedPoint.h"
 	"src/ContentProvider.cpp"
 	"src/ContentProvider.h"
 	"src/Audio.cpp"

@@ -81,6 +81,27 @@ namespace Organya
 	uint8_t melody_default[8] = {0, 11, 22, 33, 44, 55, 66, 77};
 	uint8_t drum_default[8] = {0, 2, 5, 6, 4, 8, 0, 0};
 	
+	//Playback tables
+	static const struct
+	{
+		int16_t wave_size;
+		int16_t oct_par;
+		int16_t oct_size;
+	} oct_wave[8] =
+	{
+		{256, 1,   4 }, // 0 Oct
+		{256, 2,   8 }, // 1 Oct
+		{128, 4,   12}, // 2 Oct
+		{128, 8,   16}, // 3 Oct
+		{64,  16,  20}, // 4 Oct
+		{32,  32,  24}, // 5 Oct
+		{16,  64,  28}, // 6 Oct
+		{8,   128, 32}, // 7 Oct
+	};
+	
+	static const int16_t freq_tbl[12] = {262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494};
+	static const int16_t pan_tbl[13] = {0, 43, 86, 129, 172, 215, 256, 297, 340, 383, 426, 469, 512};
+	
 	//Instrument class
 	//Destructor
 	Instrument::~Instrument()
@@ -211,23 +232,6 @@ namespace Organya
 	}
 	
 	//Melody class
-	static const struct
-	{
-		int16_t wave_size;
-		int16_t oct_par;
-		int16_t oct_size;
-	} oct_wave[8] =
-	{
-		{256, 1,   4 }, // 0 Oct
-		{256, 2,   8 }, // 1 Oct
-		{128, 4,   12}, // 2 Oct
-		{128, 8,   16}, // 3 Oct
-		{64,  16,  20}, // 4 Oct
-		{32,  32,  24}, // 5 Oct
-		{16,  64,  28}, // 6 Oct
-		{8,   128, 32}, // 7 Oct
-	};
-	
 	bool Melody::ConstructBuffers(const Instance &organya)
 	{
 		for (size_t i = 0; i < 8; i++)
@@ -236,13 +240,13 @@ namespace Organya
 			size_t wave_size = oct_wave[i].wave_size, data_size = wave_size * (pipi ? oct_wave[i].oct_size : 1);
 			
 			//Allocate buffer data
-			float *data = new float[data_size];
+			int8_t *data = new int8_t[data_size];
 			if (data == nullptr)
 				return error.Push("Failed to allocate buffer data");
-			float *datap = data;
+			int8_t *datap = data;
 			
 			//Get wave position
-			const float *wave;
+			const int8_t *wave;
 			if ((wave = organya.GetWave(wave_no)) == nullptr)
 				return error.Push("Failed to get waveform");
 			
@@ -270,7 +274,7 @@ namespace Organya
 				buffer[i][v].Stop();
 	}
 	
-	void Melody::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
+	void Melody::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		for (size_t i = 0; i < 8; i++)
 			for (size_t v = 0; v < 2; v++)
@@ -286,9 +290,6 @@ namespace Organya
 		current_buffer = &buffer[event_state.y / 12][twin];
 		current_buffer->Play(!pipi);
 	}
-	
-	static const int16_t freq_tbl[12] = {262, 277, 294, 311, 330, 349, 370, 392, 415, 440, 466, 494};
-	static const int16_t pan_tbl[13] = {0, 43, 86, 129, 172, 215, 256, 297, 340, 383, 426, 469, 512};
 	
 	void Melody::Update()
 	{
@@ -308,12 +309,12 @@ namespace Organya
 		if (event_state.volume != 0xFF)
 			current_buffer->SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
-			current_buffer->SetPan((pan_tbl[event_state.pan] - 0x100) * 10);
+			current_buffer->SetPan((pan_tbl[event_state.pan] - 256) * 10);
 	}
 	
 	void Melody::Stop()
 	{
-		//If current buffer hasn't been decided yet, or we're not playing, don't stop
+		//If not playing, don't stop
 		if (current_buffer == nullptr)
 			return;
 		current_buffer->Play(false);
@@ -338,10 +339,10 @@ namespace Organya
 		drum_stream.seekg(0x3A, std::ifstream::beg);
 		
 		//Read contents of drum file and use it for the sound buffer
-		float *data = new float[size];
-		float *datap = data;
+		int8_t *data = new int8_t[size];
+		int8_t *datap = data;
 		for (size_t i = 0; i < size; i++)
-			*datap++ = (float)(int8_t)((uint8_t)drum_stream.get() - 0x80) / 128.0f;
+			*datap++ = (int8_t)((uint8_t)drum_stream.get() - 0x80);
 		if (buffer.SetData(data, size, 22050))
 			return error.Push("Failed to set buffer data");
 		delete[] data;
@@ -353,7 +354,7 @@ namespace Organya
 		buffer.Stop();
 	}
 	
-	void Drum::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
+	void Drum::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		buffer.Mix(stream, stream_frequency, stream_frames);
 	}
@@ -372,7 +373,7 @@ namespace Organya
 		if (event_state.volume != 0xFF)
 			buffer.SetVolume((event_state.volume - 0xFF) * 8);
 		if (event_state.pan != 0xFF)
-			buffer.SetPan((pan_tbl[event_state.pan] - 0x100) * 10);
+			buffer.SetPan((pan_tbl[event_state.pan] - 256) * 10);
 	}
 	
 	void Drum::Stop()
@@ -402,9 +403,9 @@ namespace Organya
 		if (!wave_stream.is_open())
 			return error.Push("Failed to open Wave100 resource");
 		
-		for (uint8_t i = 0; i < 100; i++)
-			for (uint16_t v = 0; v < 0x100; v++)
-				wave[i][v] = (float)(int8_t)wave_stream.get() / 128.0f;
+		int8_t *wavep = &wave[0][0];
+		for (size_t i = 0; i < 0x100 * 100; i++)
+			*wavep++ = (int8_t)wave_stream.get();
 		return false;
 	}
 	
@@ -758,7 +759,7 @@ namespace Organya
 	}
 	
 	//Audio
-	void Instance::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
+	void Instance::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		//Update and mix Organya
 		int step_frames = header.wait * stream_frequency / 1000;
@@ -803,16 +804,11 @@ namespace Organya
 		}
 	}
 	
-	void MiddleAudioCallback(const Audio::Config<Instance*> *config, uint8_t *stream)
+	void MiddleAudioCallback(const Audio::Config<Instance*> *config, int32_t *stream)
 	{
-		//Clear stream
-		float *streamf = (float*)stream;
-		for (size_t i = 0; i < config->frames * 2; i++)
-			*streamf++ = 0.0f;
-		streamf = (float*)stream;
-		
-		//Use the callback from the specific instance in the config
-		config->userdata->Mix(streamf, config->frequency, config->frames);
+		//Clear and mix stream
+		memset(stream, 0, config->frames * 2 * sizeof(int32_t));
+		config->userdata->Mix(stream, config->frequency, config->frames);
 	}
 	
 	bool Instance::InitializeAudio()

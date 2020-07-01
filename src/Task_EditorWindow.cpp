@@ -85,5 +85,7 @@ bool Task_EditorWindow::PushEvent(const SDL_Event *event)
 		default:
 			break;
 	}
-	return false;
+	
+	//Quit if SDL_QUIT event
+	return event->type == SDL_QUIT;
 }

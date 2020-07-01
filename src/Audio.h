@@ -18,6 +18,7 @@ Authors: Regan "cuckydev" Green
 
 //OrgMaker classes
 #include "Error.h"
+#include "FixedPoint.h"
 
 //Audio namespace
 namespace Audio
@@ -31,7 +32,7 @@ namespace Audio
 		int frequency;
 		size_t frames;
 		
-		void (*callback)(const Config *config, uint8_t *stream);
+		void (*callback)(const Config *config, int32_t *stream);
 	};
 	
 	//Middle audio callback
@@ -39,7 +40,24 @@ namespace Audio
 	void MiddleCallback(void *userdata, uint8_t *stream, int len)
 	{
 		Config<T> *config = (Config<T>*)userdata;
-		config->callback(config, stream);
+		int32_t *buffer;
+		if ((buffer = new int32_t[config->frames * 2]) != nullptr)
+		{
+			config->callback(config, buffer);
+			int16_t *streamp = (int16_t*)stream;
+			int32_t *bufferp = buffer;
+			for (size_t i = 0; i < config->frames * 2; i++)
+			{
+				if (*bufferp < -0x7FFF)
+					*streamp++ = -0x7FFF;
+				else if (*bufferp > 0x7FFF)
+					*streamp++ = 0x7FFF;
+				else
+					*streamp++ = *bufferp;
+				bufferp++;
+			}
+			delete[] buffer;
+		}
 	};
 	
 	//Audio instance class
@@ -91,7 +109,7 @@ namespace Audio
 				//Construct audio spec
 				SDL_AudioSpec spec = {
 					config.frequency,
-					AUDIO_F32SYS,
+					AUDIO_S16,
 					2,
 					0,
 					(uint16_t)config.frames,
@@ -156,30 +174,30 @@ namespace Audio
 	{
 		private:
 			//Audio data
-			float *data = nullptr;
+			int8_t *data = nullptr;
 			size_t size;
-			double position;
+			FixedPoint<uint32_t, uint16_t, uint16_t> position;
 			
 			//Audio state
 			bool play = false, loop = false;
 			unsigned int frequency;
-			float volume, volume_l, volume_r, pan_l, pan_r;
+			FixedPoint<uint16_t, uint8_t, uint8_t> volume, volume_l, volume_r, pan_l, pan_r;
 			
 		public:
 			//Constructors and destructor
 			Buffer() { }
-			Buffer(float *_data, size_t _size, int _frequency) { SetData(_data, _size, _frequency); };
+			Buffer(int8_t *_data, size_t _size, int _frequency) { SetData(_data, _size, _frequency); };
 			~Buffer();
 			
 			//Buffer interface
-			bool SetData(float *_data, size_t _size, unsigned int _frequency);
+			bool SetData(int8_t *_data, size_t _size, unsigned int _frequency);
 			
-			void Mix(float *stream, unsigned int stream_frequency, size_t stream_frames);
+			void Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames);
 			
 			void Play(bool _loop);
 			void Stop();
 			
-			void SetPosition(double _position);
+			void SetPosition(uint16_t _position);
 			void SetFrequency(unsigned int _frequency);
 			void SetVolume(int32_t _volume);
 			void SetPan(int32_t pan);

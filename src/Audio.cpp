@@ -22,7 +22,7 @@ namespace Audio
 	}
 	
 	//Audio buffer interface
-	bool Buffer::SetData(float *_data, size_t _size, unsigned int _frequency)
+	bool Buffer::SetData(int8_t *_data, size_t _size, unsigned int _frequency)
 	{
 		//Delete previous data
 		if (data != nullptr)
@@ -30,60 +30,58 @@ namespace Audio
 		
 		//Copy data
 		size = _size;
-		if ((data = new float[size + 1]) == nullptr)
+		if ((data = new int8_t[size + 1]) == nullptr)
 			return true;
 		for (size_t i = 0; i < size; i++)
 			data[i] = _data[i];
-		data[size] = 0.0f;
+		data[size] = 0;
 		
 		//Initialize state
-		position = 0.0f;
+		position.value = 0;
 		play = false;
 		loop = false;
 		
 		frequency = _frequency;
-		volume = 1.0f;
-		volume_l = 1.0f;
-		volume_r = 1.0f;
-		pan_l = 1.0f;
-		pan_r = 1.0f;
+		volume.value = 0x100;
+		volume_l.value = 0x100;
+		volume_r.value = 0x100;
+		pan_l.value = 0x100;
+		pan_r.value = 0x100;
 		return false;
 	}
 	
-	void Buffer::Mix(float *stream, unsigned int stream_frequency, size_t stream_frames)
+	void Buffer::Mix(int32_t *stream, unsigned int stream_frequency, size_t stream_frames)
 	{
 		//Don't mix if not playing or hasn't been setup yet
 		if (play == false || data == nullptr)
 			return;
 		
 		//Get sample advance delta
-		double advance_delta = (double)frequency / (double)stream_frequency;
+		uint32_t advance_delta = ((uint32_t)frequency << 16) / (stream_frequency);
 		
 		for (size_t i = 0; i < stream_frames; i++)
 		{
 			//Perform linear interpolation and mix
-			double subsample = fmod(position, 1.0);
-			size_t int_position = (size_t)position;
-			float sample = (data[int_position] * (1.0 - subsample) + data[int_position + 1] * subsample);
-			*stream++ += sample * volume_l;
-			*stream++ += sample * volume_r;
+			int16_t sample = (data[position.fixed.upper] * (0x10000 - position.fixed.lower) + data[position.fixed.upper + 1] * position.fixed.lower) >> 8;
+			*stream++ += (sample * volume_l.value) >> 8;
+			*stream++ += (sample * volume_r.value) >> 8;
 			
 			//Increment sample
-			position += advance_delta;
+			position.value += advance_delta;
 			
 			//Stop or loop sample once it's reached its end
-			while (position >= size)
+			while (position.fixed.upper >= size)
 			{
 				if (loop)
 				{
 					//Move back
-					position -= size;
+					position.fixed.upper -= size;
 				}
 				else
 				{
 					//Stop playing
 					play = false;
-					position = 0;
+					position.value = 0;
 					return;
 				}
 			}
@@ -108,23 +106,24 @@ namespace Audio
 		frequency = _frequency;
 	}
 	
-	void Buffer::SetPosition(double _position)
+	void Buffer::SetPosition(uint16_t _position)
 	{
-		position = _position;
+		position.fixed.upper = _position;
+		position.fixed.lower = 0;
 	}
 	
 	void Buffer::SetVolume(int32_t _volume)
 	{
-		volume = ConvertVolume(_volume);
-		volume_l = volume * pan_l;
-		volume_r = volume * pan_r;
+		volume.value = ConvertVolume(_volume) * 0x100;
+		volume_l.value = (volume.value * pan_l.value) >> 8;
+		volume_r.value = (volume.value * pan_r.value) >> 8;
 	}
 	
 	void Buffer::SetPan(int32_t pan)
 	{
-		pan_l = ConvertVolume(-pan);
-		pan_r = ConvertVolume(pan);
-		volume_l = volume * pan_l;
-		volume_r = volume * pan_r;
+		pan_l.value = ConvertVolume(-pan) * 0x100;
+		pan_r.value = ConvertVolume(pan) * 0x100;
+		volume_l.value = (volume.value * pan_l.value) >> 8;
+		volume_r.value = (volume.value * pan_r.value) >> 8;
 	}
 }
