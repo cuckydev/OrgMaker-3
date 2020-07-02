@@ -29,6 +29,9 @@ target_include_directories(OrgMaker3 PRIVATE "src")
 
 set_target_properties(OrgMaker3 PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin"
+	CXX_STANDARD 17
+	CXX_STANDARD_REQUIRED ON
+	CXX_EXTENSIONS OFF
 )
 
 #######################

@@ -335,13 +335,13 @@ namespace Organya
 			return error.Push("Failed to open drum (" + drum_name[wave_no] + ") resource");
 		
 		//Get size of drum file
-		size_t size = (size_t)drum_stream.tellg() - 0x3A;
-		drum_stream.seekg(0x3A, std::ifstream::beg);
+		drum_stream.seekg(0x36, std::ifstream::beg);
+		size_t size = ((uint32_t)drum_stream.get() << 0) | ((uint32_t)drum_stream.get() << 8) | ((uint32_t)drum_stream.get() << 16) | ((uint32_t)drum_stream.get() << 24);
 		
 		//Read contents of drum file and use it for the sound buffer
-		int8_t *data = new int8_t[size];
+		int8_t *data = new int8_t[size]{0};
 		int8_t *datap = data;
-		for (size_t i = 0; i < size; i++)
+		for (size_t i = 0; i < size && !drum_stream.eof(); i++)
 			*datap++ = (int8_t)((uint8_t)drum_stream.get() - 0x80);
 		if (buffer.SetData(data, size, 22050))
 			return error.Push("Failed to set buffer data");
@@ -699,13 +699,18 @@ namespace Organya
 		if (audio.Lock())
 			return error.Push(audio.GetError());
 		
-		//Set all instrument positions
+		//Set all instrument positions and get their states
 		x = _x;
 		
 		for (auto &i : melody)
 			i.SetPosition(x);
 		for (auto &i : drum)
 			i.SetPosition(x);
+		
+		for (auto &i : melody)
+			i.GetState();
+		for (auto &i : drum)
+			i.GetState();
 		
 		//Reset step frames counter
 		step_frames_counter = 0;
@@ -767,10 +772,14 @@ namespace Organya
 		
 		while (frames_done < stream_frames)
 		{
-			if (step_frames_counter == 0)
+			if (step_frames_counter >= step_frames)
 			{
 				//Reset step frames counter
-				step_frames_counter = step_frames;
+				step_frames_counter = 0;
+				
+				//Increment position in song
+				if (++x >= header.end_x)
+					x = header.repeat_x;
 				
 				//Update instruments
 				for (auto &i : melody)
@@ -782,25 +791,21 @@ namespace Organya
 					i.UpdateState();
 				for (auto &i : drum)
 					i.UpdateState();
-				
-				//Increment position in song
-				if (++x >= header.end_x)
-					x = header.repeat_x;
 			}
 			
 			//Get frames to do
 			size_t frames_to_do = stream_frames - frames_done;
-			if (frames_to_do > step_frames_counter)
-				frames_to_do = step_frames_counter;
+			if (frames_to_do > step_frames - step_frames_counter)
+				frames_to_do = step_frames - step_frames_counter;
 			
 			//Mix instruments
-			for (auto &i : melody)
-				i.Mix(stream, stream_frequency, frames_to_do);
+			//for (auto &i : melody)
+			//	i.Mix(stream, stream_frequency, frames_to_do);
 			for (auto &i : drum)
 				i.Mix(stream, stream_frequency, frames_to_do);
 			stream += frames_to_do * 2;
 			frames_done += frames_to_do;
-			step_frames_counter -= frames_to_do;
+			step_frames_counter += frames_to_do;
 		}
 	}
 	
