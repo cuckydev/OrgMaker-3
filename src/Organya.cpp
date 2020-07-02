@@ -799,8 +799,8 @@ namespace Organya
 				frames_to_do = step_frames - step_frames_counter;
 			
 			//Mix instruments
-			//for (auto &i : melody)
-			//	i.Mix(stream, stream_frequency, frames_to_do);
+			for (auto &i : melody)
+				i.Mix(stream, stream_frequency, frames_to_do);
 			for (auto &i : drum)
 				i.Mix(stream, stream_frequency, frames_to_do);
 			stream += frames_to_do * 2;
