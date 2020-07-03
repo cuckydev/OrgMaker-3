@@ -337,6 +337,8 @@ namespace Organya
 		//Get size of drum file
 		drum_stream.seekg(0x36, std::ifstream::beg);
 		size_t size = ((uint32_t)drum_stream.get() << 0) | ((uint32_t)drum_stream.get() << 8) | ((uint32_t)drum_stream.get() << 16) | ((uint32_t)drum_stream.get() << 24);
+		if (size == 0)
+			return error.Push("Can't read drum wave with size of 0");
 		
 		//Read contents of drum file and use it for the sound buffer
 		int8_t *data = new int8_t[size]{0};
