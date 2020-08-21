@@ -57,7 +57,7 @@ namespace Audio
 			return;
 		
 		//Get sample advance delta
-		uint32_t advance_delta = ((uint32_t)frequency << 16) / (stream_frequency);
+		uint32_t advance_delta = ((uint64_t)frequency << 16) / stream_frequency;
 		
 		for (size_t i = 0; i < stream_frames; i++)
 		{

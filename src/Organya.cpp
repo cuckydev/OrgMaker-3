@@ -24,7 +24,7 @@ namespace Organya
 	//Organya constants
 	const std::string default_path = "NewData.org";
 	
-	static const std::string drum_name[] = {
+	std::array<std::string, 42> drum_name = {
 		"Bass01",
 		"Bass02",
 		"Snare01",
@@ -365,7 +365,8 @@ namespace Organya
 	{
 		//Rewind and play buffer
 		buffer.Play(false);
-		buffer.SetFrequency(100 + event_state.y * 800);
+		std::cout << 100 + (unsigned int)event_state.y * 800 << std::endl;
+		buffer.SetFrequency(100 + (unsigned int)event_state.y * 800);
 		buffer.SetPosition(0.0);
 	}
 	
@@ -470,6 +471,21 @@ namespace Organya
 		return false;
 	}
 	
+	#ifdef FORCE_CS_DRUMS
+	size_t FindDrumFromName(std::string name)
+	{
+		size_t i = 0;
+		for (auto &v : drum_name)
+		{
+			if (v == name)
+				return i;
+			else
+				i++;
+		}
+		return 0;
+	}
+	#endif
+	
 	bool Instance::Load(std::istream &stream)
 	{
 		//Fail if content provider wasn't given
@@ -507,6 +523,15 @@ namespace Organya
 		for (auto &i : drum)
 			if (ReadInstrument(stream, i, *note_num_p++))
 				return true;
+		
+		#ifdef FORCE_CS_DRUMS
+		drum[0].wave_no = FindDrumFromName("Bass01");
+		drum[1].wave_no = FindDrumFromName("Snare01");
+		drum[2].wave_no = FindDrumFromName("HiClose01");
+		drum[3].wave_no = FindDrumFromName("HiOpen01");
+		drum[4].wave_no = FindDrumFromName("Tom01");
+		drum[5].wave_no = FindDrumFromName("Per01");
+		#endif
 		
 		//Construct instrument buffers
 		for (auto &i : melody)
@@ -872,6 +897,7 @@ namespace Organya
 		for (size_t i = 0; i < frames * 2; i++)
 			WriteLE16(stream, *bufferp++);
 		delete[] buffer;
+		return false;
 	}
 	
 	//Audio
