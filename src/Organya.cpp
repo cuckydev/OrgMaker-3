@@ -365,7 +365,6 @@ namespace Organya
 	{
 		//Rewind and play buffer
 		buffer.Play(false);
-		std::cout << 100 + (unsigned int)event_state.y * 800 << std::endl;
 		buffer.SetFrequency(100 + (unsigned int)event_state.y * 800);
 		buffer.SetPosition(0.0);
 	}
